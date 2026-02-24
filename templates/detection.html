@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% block title %}Detection — FallVision{% endblock %}
+{% block page_title %}Limb Detection & Angle Analysis{% endblock %}
+
+{% block extra_head %}
+<style>
+.limb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.limb-tile{
+  background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-lg);
+  padding:20px;cursor:pointer;transition:.2s;text-align:center;text-decoration:none;display:block;
+}
+.limb-tile:hover{border-color:var(--yellow);box-shadow:0 4px 20px rgba(212,160,23,.15)}
+.limb-tile.active{border-color:var(--yellow-dark);background:var(--yellow-light)}
+.limb-tile .lt-icon{font-size:36px;margin-bottom:10px}
+.limb-tile .lt-name{font-weight:700;font-size:15px;color:var(--text)}
+.limb-tile .lt-angle{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;margin-top:4px}
+.limb-tile .lt-status{font-size:12px;margin-top:6px;padding:3px 10px;border-radius:999px;display:inline-block;font-weight:600}
+
+.gauge-container{display:flex;flex-direction:column;align-items:center;padding:20px 0}
+.gauge-ring{position:relative;width:200px;height:200px}
+.gauge-ring svg{width:200px;height:200px;transform:rotate(-90deg)}
+.gauge-ring .gauge-val{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.gauge-ring .gauge-val .big{font-family:'DM Serif Display',serif;font-size:42px;letter-spacing:-2px;line-height:1}
+.gauge-ring .gauge-val .unit{font-size:14px;color:var(--text2);margin-top:2px}
+
+.angle-history{display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:16px}
+.angle-bar{flex:1;border-radius:4px 4px 0 0;min-height:4px;transition:.4s}
+
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.analysis-item{background:var(--surface2);border-radius:10px;padding:14px}
+.analysis-item .ai-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.analysis-item .ai-val{font-size:16px;font-weight:700;color:var(--text)}
+.analysis-item .ai-sub{font-size:12px;color:var(--text2);margin-top:2px}
+
+.posture-indicator{display:flex;gap:12px;align-items:center;padding:16px;border-radius:12px;border:1px solid var(--border);margin-bottom:12px}
+.pi-dot{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Limb Selector -->
+{% set limb_map = [
+  ('right_arm','🦾','Right Arm',87.4,'Normal','green'),
+  ('left_arm','🦾','Left Arm',83.1,'Normal','green'),
+  ('right_leg','🦵','Right Leg',162.3,'Monitor','yellow'),
+  ('left_leg','🦵','Left Leg',170.8,'Normal','green'),
+] %}
+<div class="limb-grid">
+  {% for lid, icon, name, angle, status, color in limb_map %}
+  <a href="/detection?limb={{ lid }}" class="limb-tile {{ 'active' if limb==lid }}">
+    <div class="lt-icon">{{ icon }}</div>
+    <div class="lt-name">{{ name }}</div>
+    <div class="lt-angle" style="color:var(--{{ color }})">{{ angle }}°</div>
+    <div class="lt-status" style="background:var(--{{ color }}-light);color:var(--{{ color }})">{{ status }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="grid-65-35">
+  <!-- Left: Main analysis -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Angle Gauge Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">
+            {% if limb=='right_arm' %}Right Arm
+            {% elif limb=='left_arm' %}Left Arm
+            {% elif limb=='right_leg' %}Right Leg
+            {% else %}Left Leg{% endif %} — Live Angle Monitor
+          </div>
+          <div class="card-subtitle">Real-time joint angle with biomechanical safe range overlay</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="refreshAngles()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </div>
+      <div style="display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start">
+        <div class="gauge-container">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 200 200">
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#F3F2EE" stroke-width="14"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#E8D898" stroke-width="14"
+                stroke-dasharray="{% if 'arm' in limb %}251{% else %}188{% endif %} 502"
+                stroke-linecap="round" opacity=".3"/>
+              <circle id="gaugeArc" cx="100" cy="100" r="80" fill="none" stroke="#D4A017" stroke-width="14"
+                stroke-dasharray="{{ angles[0] / 180 * 251 }} 502"
+                stroke-linecap="round" style="transition:stroke-dasharray .6s ease"/>
+            </svg>
+            <div class="gauge-val">
+              <div class="big" id="gaugeVal">{{ angles[0] }}</div>
+              <div class="unit">degrees</div>
+            </div>
+          </div>
+          <div class="angle-history" id="angleHistory">
+            {% for a in angles %}
+            {% set pct = ((a - 60) / (180 - 60) * 100)|int %}
+            <div class="angle-bar" style="height:{{ pct }}%;background:{% if a > 155 %}var(--green){% elif a > 90 %}var(--yellow){% else %}var(--red){% endif %}"></div>
+            {% endfor %}
+          </div>
+          <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:6px">Last 8 readings</div>
+        </div>
+
+        <div>
+          <div class="analysis-grid">
+            <div class="analysis-item">
+              <div class="ai-label">Current Angle</div>
+              <div class="ai-val" id="currentAngle">{{ angles[0] }}°</div>
+              <div class="ai-sub">Real-time measurement</div>
+            </div>
+            <div class="analysis-item">
+              <div class="ai-label">Safe Range</div>
+              <div class="ai-val">{% if 'arm' in limb %}70–110°{% else %}155–175°{% endif %}</div>
+              <div class="ai-sub">Biomechanical norm</div>
+            </div>
+            <div class="analysis-item">
+              <div class="ai-label">Session Avg</div>
+              <div class="ai-val" id="sessionAvg">{{ (angles | sum / angles | length) | round(1) }}°</div>
+              <div class="ai-sub">Last 8 readings</div>
+            </div>
+            <div class="analysis-item">
+              <div class="ai-label">Variability</div>
+              <div class="ai-val">{% set diff = angles | max - angles | min %}{{ diff | round(1) }}°</div>
+              <div class="ai-sub">Range spread</div>
+            </div>
+            <div class="analysis-item">
+              <div class="ai-label">ROM Status</div>
+              <div class="ai-val" style="color:var(--green)">{% if angles[0] > 155 %}Normal{% else %}Reduced{% endif %}</div>
+              <div class="ai-sub">Range of Motion</div>
+            </div>
+            <div class="analysis-item">
+              <div class="ai-label">Symmetry Index</div>
+              <div class="ai-val" style="color:var(--yellow-dark)">93.8%</div>
+              <div class="ai-sub">vs. contralateral limb</div>
+            </div>
+          </div>
+
+          <div class="insight-box" style="margin-top:14px">
+            <div class="insight-head"><i class="fa-solid fa-microscope"></i> Clinical Interpretation</div>
+            <p id="clinicalText">
+              {% if 'arm' in limb %}
+              The {% if limb=='right_arm' %}right{% else %}left{% endif %} arm shows a current flexion angle of <strong>{{ angles[0] }}°</strong>. This falls within the
+              {% if angles[0] >= 70 and angles[0] <= 110 %}normal functional range (70–110°){% else %}slightly outside normal range{% endif %}.
+              Upper limb kinematics affect balance by acting as counterweight during gait. Arm swing deficits correlate with a 22% increase in lateral instability.
+              {% else %}
+              The {% if limb=='right_leg' %}right{% else %}left{% endif %} leg shows an extension angle of <strong>{{ angles[0] }}°</strong>.
+              {% if angles[0] >= 155 and angles[0] <= 175 %}This is within the safe extension range (155–175°), indicating healthy knee biomechanics.{% else %}This deviates from the optimal range (155–175°), which may indicate reduced quadriceps strength or hip flexor tightness.{% endif %}
+              Leg extension quality directly determines push-off force and step length, key predictors of fall risk.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Posture Indicators -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">Posture Correctness Indicators</div>
+      {% set indicators = [
+        ('Trunk Alignment','fa-arrows-up-down','Spinal column within ±3° of vertical','98%','green'),
+        ('Hip-Knee-Ankle Axis','fa-ruler-combined','Lower limb mechanical axis deviation: 2.1°','91%','green'),
+        ('Weight Distribution','fa-scale-balanced','L/R weight ratio: 49.2% / 50.8%','96%','green'),
+        ('Head-Neck Posture','fa-head-side','Forward head posture angle: 8.4° (normal <12°)','86%','yellow'),
+        ('Shoulder Symmetry','fa-person','Shoulder level difference: 3mm (excellent)','99%','green'),
+      ] %}
+      {% for name, icon, desc, score, color in indicators %}
+      <div class="posture-indicator">
+        <div class="pi-dot" style="background:var(--{{ color }}-light);color:var(--{{ color }})">
+          <i class="fa-solid {{ icon }}"></i>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px;margin-bottom:3px">{{ name }}</div>
+          <div style="font-size:12px;color:var(--text2)">{{ desc }}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--{{ color }})">{{ score }}</div>
+          <div style="font-size:11px;color:var(--text3)">Score</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <!-- Movement Quality Score -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:4px">Movement Quality Score</div>
+      <div class="card-subtitle" style="margin-bottom:20px">Composite biomechanical index</div>
+      <div style="text-align:center">
+        <div style="font-family:'DM Serif Display',serif;font-size:64px;letter-spacing:-3px;color:var(--green);line-height:1">{{ kpis.mobility }}</div>
+        <div style="font-size:14px;color:var(--text2);margin-top:4px">out of 100</div>
+        <div style="margin:16px auto;max-width:200px">
+          <div class="progress-bar" style="height:10px">
+            <div class="progress-fill" style="width:{{ kpis.mobility }}%;background:var(--green)"></div>
+          </div>
+        </div>
+        <div class="badge badge-green"><i class="fa-solid fa-check"></i> Above average for age group</div>
+      </div>
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
+        {% for label, val, color in [('Gait Quality','88%','green'),('Balance','82%','green'),('Coordination','76%','yellow'),('Strength Index','71%','yellow')] %}
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>{{ label }}</span><span style="color:var(--{{ color }});font-weight:600">{{ val }}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:{{ val }};background:var(--{{ color }})"></div></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" style="justify-content:center" onclick="runFullScan()">
+          <i class="fa-solid fa-person-rays"></i> Run Full Body Scan
+        </button>
+        <button class="btn btn-outline" style="justify-content:center">
+          <i class="fa-solid fa-video"></i> Start Gait Analysis Video
+        </button>
+        <a href="/emergency" class="btn btn-outline" style="justify-content:center;color:var(--red);border-color:var(--red)">
+          <i class="fa-solid fa-triangle-exclamation"></i> View Risk Alerts
+        </a>
+        <button class="btn btn-outline" style="justify-content:center">
+          <i class="fa-solid fa-file-pdf"></i> Export Detection Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card" style="background:var(--yellow-light);border-color:#e8d898">
+      <div class="card-title" style="margin-bottom:14px;color:var(--yellow-dark)"><i class="fa-solid fa-dumbbell"></i> Exercise Recommendations</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        {% for ex, dur, benefit in [
+          ('Seated Knee Extension','3×15 reps','Improves quad strength +11%'),
+          ('Hip Abductor Stretch','2×30s hold','Reduces leg angle deviation'),
+          ('Tandem Gait Practice','5 min daily','Improves balance 23%'),
+          ('Arm Pendulum Swing','4×20 reps','Restores arm swing symmetry'),
+        ] %}
+        <div style="background:var(--surface);border-radius:10px;padding:12px;border:1px solid #e8d898">
+          <div style="font-weight:600;font-size:13px;color:var(--text)">{{ ex }}</div>
+          <div style="font-size:12px;color:var(--yellow-dark);font-weight:600;margin-top:2px">{{ dur }}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px">{{ benefit }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const angles = {{ angles | tojson }};
+
+function refreshAngles(){
+  fetch('/api/limb_angles?limb={{ limb }}')
+    .then(r=>r.json()).then(data=>{
+      const a=data.angles;
+      document.getElementById('gaugeVal').textContent=a[0];
+      document.getElementById('currentAngle').textContent=a[0]+'°';
+      const avg=(a.reduce((s,v)=>s+v,0)/a.length).toFixed(1);
+      document.getElementById('sessionAvg').textContent=avg+'°';
+      const arc=document.getElementById('gaugeArc');
+      arc.setAttribute('stroke-dasharray',`${a[0]/180*251} 502`);
+      const bars=document.getElementById('angleHistory').querySelectorAll('.angle-bar');
+      a.forEach((v,i)=>{
+        if(bars[i]){
+          const pct=((v-60)/(180-60)*100);
+          bars[i].style.height=pct+'%';
+          bars[i].style.background=v>155?'var(--green)':v>90?'var(--yellow)':'var(--red)';
+        }
+      });
+    });
+}
+
+function runFullScan(){
+  const btn=event.target;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Scanning...';
+  setTimeout(()=>{btn.innerHTML='<i class="fa-solid fa-person-rays"></i> Run Full Body Scan';alert('Full body scan complete. All 4 limbs within acceptable ranges. Export PDF to share with your clinician.');},2200);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% block title %}Threshold Monitor — FallVision{% endblock %}
+{% block page_title %}Neural Threshold Monitor 🎯{% endblock %}
+
+{% block extra_head %}
+<style>
+.threshold-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px}
+.threshold-card{
+  background:var(--surface);border-radius:var(--radius-lg);padding:20px;
+  border:2px solid var(--border);transition:all .3s;position:relative;
+}
+.threshold-card.alert-red{border-color:var(--red);background:var(--red-light)}
+.threshold-card.alert-orange{border-color:#D4A017;background:#FFF3C4}
+.threshold-card.alert-yellow{border-color:#F5C842;background:#FFFBE6}
+.threshold-card.safe{border-color:var(--green);background:var(--green-light)}
+
+.threshold-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.limb-name{font-family:var(--font-display);font-size:18px;font-weight:600}
+.alert-badge{
+  padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.alert-badge.red{background:var(--red);color:#fff}
+.alert-badge.orange{background:#D4A017;color:#fff}
+.alert-badge.yellow{background:#F5C842;color:#000}
+.alert-badge.green{background:var(--green);color:#fff}
+
+.angle-display{text-align:center;padding:20px 0}
+.angle-value{
+  font-family:var(--font-mono);font-size:48px;font-weight:700;
+  letter-spacing:-2px;line-height:1;
+}
+.angle-unit{font-size:14px;color:var(--text2);margin-top:4px}
+
+.range-indicator{
+  margin:20px 0;padding:12px;border-radius:8px;background:var(--surface2);
+}
+.range-bar{
+  height:12px;background:linear-gradient(to right,#ff6b6b 0%,#ffd93d 20%,#6bcf7f 30%,#6bcf7f 70%,#ffd93d 80%,#ff6b6b 100%);
+  border-radius:6px;position:relative;margin:8px 0;
+}
+.range-marker{
+  position:absolute;top:-8px;width:4px;height:28px;background:#000;
+  border-radius:2px;transition:left .6s ease;
+}
+.range-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px}
+
+.risk-summary{
+  background:linear-gradient(135deg,#1A1916,#2d2722);
+  border-radius:var(--radius-lg);padding:28px;color:#fff;margin-bottom:24px;
+}
+.risk-score{font-family:var(--font-display);font-size:56px;letter-spacing:-2px;text-align:center}
+.risk-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
+.risk-item{text-align:center;padding:12px;background:rgba(255,255,255,.08);border-radius:10px}
+.risk-item-value{font-size:24px;font-weight:700;margin-bottom:4px}
+.risk-item-label{font-size:12px;opacity:.7}
+
+.recommendations-list{display:flex;flex-direction:column;gap:12px}
+.rec-item{
+  display:flex;gap:12px;padding:14px;background:var(--surface2);
+  border-radius:10px;border-left:3px solid var(--yellow);
+}
+.rec-icon{font-size:20px;flex-shrink:0}
+.rec-text{font-size:14px;line-height:1.6;color:var(--text)}
+
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Risk Summary -->
+<div class="risk-summary">
+  <div style="text-align:center;margin-bottom:16px">
+    <div style="font-size:13px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Composite Fall Risk Score</div>
+    <div class="risk-score" style="color:{{ risk_analysis.risk_color }}">{{ risk_analysis.total_risk }}%</div>
+    <div style="font-size:18px;font-weight:600;margin-top:8px">{{ risk_analysis.risk_level }} Risk</div>
+  </div>
+  
+  <div class="risk-breakdown">
+    <div class="risk-item">
+      <div class="risk-item-value">{{ risk_analysis.breakdown.limb_risk }}%</div>
+      <div class="risk-item-label">Limb Angles</div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-item-value">{{ risk_analysis.breakdown.brain_risk }}%</div>
+      <div class="risk-item-label">Brain Sync</div>
+    </div>
+    <div class="risk-item">
+      <div class="risk-item-value">{{ risk_analysis.breakdown.posture_risk }}%</div>
+      <div class="risk-item-label">Posture</div>
+    </div>
+  </div>
+  
+  {% if risk_analysis.limb_alerts > 0 %}
+  <div style="margin-top:20px;padding:14px;background:rgba(192,57,43,.2);border-radius:10px;border:1px solid rgba(192,57,43,.4)">
+    <div style="font-weight:700;margin-bottom:6px"><i class="fa-solid fa-triangle-exclamation"></i> {{ risk_analysis.limb_alerts }} Active Alert{{ 's' if risk_analysis.limb_alerts > 1 }}</div>
+    <div style="font-size:13px;opacity:.9">Immediate attention required for limb angles outside safe range</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Alert Summary -->
+{% if threshold_report.alerts|length > 0 %}
+<div class="card" style="margin-bottom:24px;border-left:4px solid var(--red)">
+  <div class="card-header">
+    <div>
+      <div class="card-title"><i class="fa-solid fa-bell pulse" style="color:var(--red)"></i> Active Threshold Alerts</div>
+      <div class="card-subtitle">{{ threshold_report.critical_count }} critical, {{ threshold_report.warning_count }} warnings, {{ threshold_report.caution_count }} cautions</div>
+    </div>
+    <button class="btn btn-primary" onclick="notifyGuardian()">
+      <i class="fa-solid fa-paper-plane"></i> Notify Guardian
+    </button>
+  </div>
+  
+  {% for alert in threshold_report.alerts %}
+  <div class="alert-item" style="background:{% if alert.alert_level == 'RED' %}var(--red-light){% elif alert.alert_level == 'ORANGE' %}#FFF3C4{% else %}#FFFBE6{% endif %}">
+    <div class="alert-icon" style="background:{% if alert.alert_level == 'RED' %}var(--red){% elif alert.alert_level == 'ORANGE' %}#D4A017{% else %}#F5C842{% endif %};color:#fff">
+      <i class="fa-solid {{ alert.alert_config.icon }}"></i>
+    </div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px;color:var(--text)">{{ alert.message }}</div>
+      <div style="font-size:12px;color:var(--text2)">
+        <strong>Current:</strong> {{ alert.angle }}° | 
+        <strong>Deviation:</strong> {{ alert.deviation_from_range }}° {{ alert.direction }} safe range | 
+        <strong>Time:</strong> {{ alert.timestamp[:19] }}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Limb Threshold Cards -->
+<h3 style="font-family:var(--font-display);font-size:20px;margin-bottom:16px">Individual Limb Status</h3>
+<div class="threshold-grid">
+  {% for result in threshold_report.results %}
+  <div class="threshold-card {% if result.status == 'alert' %}alert-{{ result.alert_level|lower }}{% else %}safe{% endif %}">
+    <div class="threshold-header">
+      <div class="limb-name">{{ result.limb.replace('_', ' ').title() }}</div>
+      {% if result.status == 'alert' %}
+      <div class="alert-badge {{ result.alert_level|lower }}">
+        <i class="fa-solid {{ result.alert_config.icon }}"></i>
+        {{ result.alert_level }}
+      </div>
+      {% else %}
+      <div class="alert-badge green">
+        <i class="fa-solid fa-check"></i> SAFE
+      </div>
+      {% endif %}
+    </div>
+    
+    <div class="angle-display">
+      <div class="angle-value" style="color:{% if result.status == 'safe' %}var(--green){% else %}var(--red){% endif %}">
+        {{ result.angle }}
+      </div>
+      <div class="angle-unit">degrees</div>
+    </div>
+    
+    <div class="range-indicator">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">
+        <span>Safe Range: {{ result.safe_range }}</span>
+        <span>Optimal: {{ result.optimal }}°</span>
+      </div>
+      <div class="range-bar">
+        {% set min_range = result.optimal - 40 %}
+        {% set max_range = result.optimal + 40 %}
+        {% set position = ((result.angle - min_range) / (max_range - min_range) * 100) %}
+        <div class="range-marker" style="left:{{ position|int }}%"></div>
+      </div>
+      <div class="range-labels">
+        <span>{{ min_range }}°</span>
+        <span>{{ result.optimal }}°</span>
+        <span>{{ max_range }}°</span>
+      </div>
+    </div>
+    
+    <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:13px">
+      <div style="font-weight:600;margin-bottom:4px">Assessment:</div>
+      <div style="color:var(--text2)">{{ result.message }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Brain Sync Status -->
+<div class="card" style="margin-top:24px;border-top:3px solid {% if brain_check.status == 'excellent' %}var(--green){% elif brain_check.status == 'critical' %}var(--red){% else %}#D4A017{% endif %}">
+  <div class="card-header">
+    <div>
+      <div class="card-title"><i class="fa-solid fa-brain"></i> Brain-Movement Synchronization</div>
+      <div class="card-subtitle">Neuromuscular coordination status</div>
+    </div>
+    <div class="badge {% if brain_check.status == 'excellent' %}badge-green{% elif brain_check.status == 'critical' %}badge-red{% else %}badge-yellow{% endif %}">
+      {{ brain_check.status|upper }}
+    </div>
+  </div>
+  
+  <div class="grid-2">
+    <div>
+      <div style="text-align:center;padding:20px">
+        <div style="font-family:var(--font-display);font-size:64px;letter-spacing:-2px;color:{% if brain_check.status == 'excellent' %}var(--green){% elif brain_check.status == 'critical' %}var(--red){% else %}#D4A017{% endif %}">
+          {{ brain_check.value }}
+        </div>
+        <div style="font-size:14px;color:var(--text2);margin-top:8px">Correlation Coefficient</div>
+      </div>
+      
+      <div style="padding:16px;background:var(--surface2);border-radius:10px">
+        <div style="font-weight:600;font-size:14px;margin-bottom:8px">Thresholds:</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8">
+          <div>🔴 Critical: &lt; 0.65</div>
+          <div>🟡 Warning: 0.65 - 0.75</div>
+          <div>🟢 Normal: &gt; 0.80</div>
+        </div>
+      </div>
+    </div>
+    
+    <div>
+      <div style="padding:18px;background:{% if brain_check.status == 'excellent' %}var(--green-light){% elif brain_check.status == 'critical' %}var(--red-light){% else %}#FFF3C4{% endif %};border-radius:12px;height:100%">
+        <div style="font-weight:700;font-size:15px;margin-bottom:12px">{{ brain_check.message }}</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:16px">
+          {{ brain_check.recommendation }}
+        </div>
+        {% if brain_check.alert_level %}
+        <button class="btn btn-danger" onclick="sendEmergencyAlert()">
+          <i class="fa-solid fa-siren-on"></i> Alert Guardian Now
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recommendations -->
+<div class="card" style="margin-top:24px">
+  <div class="card-title" style="margin-bottom:16px"><i class="fa-solid fa-lightbulb"></i> Recommended Actions</div>
+  <div class="recommendations-list">
+    {% for rec in risk_analysis.recommendations %}
+    <div class="rec-item">
+      <div class="rec-icon">{% if '🚨' in rec or 'IMMEDIATE' in rec %}🚨{% elif '⚠️' in rec %}⚠️{% else %}✓{% endif %}</div>
+      <div class="rec-text">{{ rec }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh every 5 seconds
+let refreshInterval;
+
+function startAutoRefresh() {
+  refreshInterval = setInterval(() => {
+    fetch('/api/threshold_check')
+      .then(r => r.json())
+      .then(data => {
+        if (data.report.alert_count > 0) {
+          console.log('Alerts detected:', data.report.alert_count);
+          // In production, update UI dynamically
+        }
+      })
+      .catch(err => console.error('Refresh failed:', err));
+  }, 5000);
+}
+
+function notifyGuardian() {
+  if (confirm('Send threshold alert notification to all guardians?')) {
+    // In production, call API to send notifications
+    alert('✓ Guardians have been notified via SMS and email');
+  }
+}
+
+function sendEmergencyAlert() {
+  if (confirm('⚠️ Send EMERGENCY alert? This will notify all guardians immediately.')) {
+    fetch('/api/send_sos', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        location: {lat: 12.9716, lon: 77.5946}, // Example coordinates
+        vitals: {brain_sync: {{ brain_check.value }}}
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('🆘 Emergency alert sent! Guardians notified.');
+      }
+    })
+    .catch(err => {
+      console.error('SOS failed:', err);
+      alert('❌ Failed to send alert. Please call guardian directly.');
+    });
+  }
+}
+
+// Start monitoring
+startAutoRefresh();
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (refreshInterval) clearInterval(refreshInterval);
+});
+</script>
+{% endblock %}

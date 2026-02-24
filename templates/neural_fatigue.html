@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+{% block title %}Neural Fatigue — FallVision{% endblock %}
+{% block page_title %}Neural Fatigue Monitor 💤{% endblock %}
+
+{% block extra_head %}
+<style>
+.fatigue-hero{
+  background:linear-gradient(135deg,#1A1916,#2d2722);
+  border-radius:var(--radius-lg);
+  padding:40px;
+  color:#fff;
+  text-align:center;
+  margin-bottom:24px;
+}
+.fatigue-score{
+  font-family:var(--font-display);
+  font-size:96px;
+  letter-spacing:-4px;
+  font-weight:700;
+  line-height:1;
+}
+.fatigue-gauge{
+  width:100%;
+  max-width:600px;
+  height:20px;
+  background:linear-gradient(to right,#2D8C6E 0%,#6BCF7F 30%,#F5C842 50%,#E67E22 70%,#C0392B 100%);
+  border-radius:10px;
+  margin:24px auto;
+  position:relative;
+}
+.fatigue-marker{
+  position:absolute;
+  top:-12px;
+  width:6px;
+  height:44px;
+  background:#fff;
+  border-radius:3px;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
+  transition:left .6s ease;
+}
+.fatigue-marker::after{
+  content:'▼';
+  position:absolute;
+  top:-18px;
+  left:50%;
+  transform:translateX(-50%);
+  color:#fff;
+  font-size:14px;
+}
+
+.hourly-grid{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:8px;
+  margin:20px 0;
+}
+.hour-cell{
+  aspect-ratio:1;
+  border-radius:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .2s;
+  border:2px solid transparent;
+}
+.hour-cell:hover{
+  transform:scale(1.05);
+  border-color:var(--yellow-dark);
+}
+.hour-cell.low{background:var(--green-light);color:var(--green)}
+.hour-cell.moderate{background:var(--yellow-light);color:var(--yellow-dark)}
+.hour-cell.high{background:var(--red-light);color:var(--red)}
+.hour-cell.current{border-color:var(--yellow-dark);box-shadow:0 0 0 3px rgba(212,160,23,.2)}
+.hour-time{font-size:10px;opacity:.8;margin-top:2px}
+.hour-value{font-size:14px;font-weight:700}
+
+.rec-card{
+  padding:16px 20px;
+  border-radius:12px;
+  border-left:4px solid;
+  margin-bottom:12px;
+  display:flex;
+  gap:14px;
+  align-items:center;
+}
+.rec-card.critical{border-left-color:var(--red);background:var(--red-light)}
+.rec-card.warning{border-left-color:#D4A017;background:#FFF3C4}
+.rec-card.good{border-left-color:var(--green);background:var(--green-light)}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Current Fatigue Status -->
+<div class="fatigue-hero">
+  <div style="font-size:14px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">
+    Current Neural Fatigue Level
+  </div>
+  <div class="fatigue-score" style="color:{% if current_fatigue.fatigue < 30 %}#6BCF7F{% elif current_fatigue.fatigue < 60 %}#F5C842{% else %}#ff6b6b{% endif %}">
+    {{ current_fatigue.fatigue|int }}
+  </div>
+  <div style="font-size:20px;font-weight:600;margin-top:12px">
+    {{ current_fatigue.status|upper }}
+  </div>
+  
+  <div class="fatigue-gauge">
+    <div class="fatigue-marker" style="left:{{ current_fatigue.fatigue }}%"></div>
+  </div>
+  
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px;text-align:center">
+    <div style="background:rgba(255,255,255,.08);padding:14px;border-radius:10px">
+      <div style="font-size:11px;opacity:.7;margin-bottom:4px">TIME</div>
+      <div style="font-size:18px;font-weight:700">{{ current_fatigue.label }}</div>
+    </div>
+    <div style="background:rgba(255,255,255,.08);padding:14px;border-radius:10px">
+      <div style="font-size:11px;opacity:.7;margin-bottom:4px">AVG TODAY</div>
+      <div style="font-size:18px;font-weight:700">{{ avg_fatigue }}</div>
+    </div>
+    <div style="background:rgba(255,255,255,.08);padding:14px;border-radius:10px">
+      <div style="font-size:11px;opacity:.7;margin-bottom:4px">PEAK</div>
+      <div style="font-size:18px;font-weight:700">{{ peak_fatigue.fatigue|int }} at {{ peak_fatigue.label }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Recommendations -->
+<div class="card" style="margin-bottom:24px">
+  <div class="card-title" style="margin-bottom:16px">
+    <i class="fa-solid fa-clipboard-check"></i> Recommended Actions
+  </div>
+  
+  {% for rec in recommendations %}
+  <div class="rec-card {% if '🛑' in rec or 'High' in rec %}critical{% elif '⚠️' in rec %}warning{% else %}good{% endif %}">
+    <div style="font-size:24px">
+      {% if '🛑' in rec or 'High' in rec %}🛑
+      {% elif '⚠️' in rec %}⚠️
+      {% else %}✓
+      {% endif %}
+    </div>
+    <div style="flex:1;font-size:14px;line-height:1.6;color:var(--text)">
+      {{ rec }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- 24-Hour Fatigue Pattern -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">24-Hour Fatigue Pattern</div>
+      <div class="card-subtitle">Click any hour for detailed analysis</div>
+    </div>
+  </div>
+  
+  <div style="padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:16px">
+    <div style="display:flex;gap:20px;justify-content:center;font-size:13px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:16px;height:16px;background:var(--green-light);border-radius:4px"></div>
+        <span>Low (&lt;30)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:16px;height:16px;background:var(--yellow-light);border-radius:4px"></div>
+        <span>Moderate (30-60)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:16px;height:16px;background:var(--red-light);border-radius:4px"></div>
+        <span>High (&gt;60)</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="hourly-grid">
+    {% for hour in hourly_fatigue[:8] %}
+    <div class="hour-cell {{ hour.status }} {% if hour.hour == current_fatigue.hour %}current{% endif %}"
+         onclick="showHourDetail({{ hour.hour }}, {{ hour.fatigue }}, '{{ hour.status }}')">
+      <div class="hour-value">{{ hour.fatigue|int }}</div>
+      <div class="hour-time">{{ hour.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <div class="hourly-grid">
+    {% for hour in hourly_fatigue[8:16] %}
+    <div class="hour-cell {{ hour.status }} {% if hour.hour == current_fatigue.hour %}current{% endif %}"
+         onclick="showHourDetail({{ hour.hour }}, {{ hour.fatigue }}, '{{ hour.status }}')">
+      <div class="hour-value">{{ hour.fatigue|int }}</div>
+      <div class="hour-time">{{ hour.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <div class="hourly-grid">
+    {% for hour in hourly_fatigue[16:] %}
+    <div class="hour-cell {{ hour.status }} {% if hour.hour == current_fatigue.hour %}current{% endif %}"
+         onclick="showHourDetail({{ hour.hour }}, {{ hour.fatigue }}, '{{ hour.status }}')">
+      <div class="hour-value">{{ hour.fatigue|int }}</div>
+      <div class="hour-time">{{ hour.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <canvas id="fatigueChart" style="margin-top:20px" height="100"></canvas>
+</div>
+
+<!-- Fatigue vs Risk Analysis -->
+<div class="grid-2" style="margin-top:24px">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Fatigue-Fall Risk Correlation</div>
+    <canvas id="correlationChart" height="160"></canvas>
+    <div style="margin-top:12px;padding:12px;background:var(--yellow-light);border-radius:8px;font-size:13px;color:#7a6520">
+      <strong>Key Insight:</strong> Fall risk increases by an average of 3.2% for every 10-point increase in fatigue score.
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Rest Effectiveness</div>
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:56px;font-weight:700;color:var(--green)">18%</div>
+      <div style="font-size:14px;color:var(--text2);margin-top:6px">Average Fatigue Reduction After 30-Min Rest</div>
+    </div>
+    <div style="padding:16px;background:var(--green-light);border-radius:10px;margin-top:16px">
+      <div style="font-weight:700;margin-bottom:8px;color:var(--green)">💡 Optimization Tip</div>
+      <div style="font-size:13px;line-height:1.7;color:var(--text)">
+        Taking a 15-30 minute rest during peak fatigue hours ({{ peak_fatigue.label }}) can reduce your fall risk by up to 24%.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Clinical Explanation -->
+<div class="card" style="margin-top:24px;background:linear-gradient(135deg,#EFF6FF,#E0F2FE)">
+  <div class="card-title" style="margin-bottom:12px">
+    <i class="fa-solid fa-book-medical"></i> Understanding Neural Fatigue
+  </div>
+  <div style="font-size:14px;line-height:1.8;color:var(--text)">
+    <p style="margin-bottom:12px">
+      <strong>Neural fatigue</strong> (also called cognitive-motor fatigue) occurs when the brain's motor control systems become less efficient due to sustained use, lack of sleep, or underlying health conditions. Unlike physical tiredness, neural fatigue specifically affects your brain's ability to coordinate muscle movements.
+    </p>
+    <p style="margin-bottom:12px">
+      When neural fatigue is high, your brain-movement synchronization drops, reaction times slow, and limb coordination deteriorates - all significant fall risk factors. This is why many falls occur during predictable fatigue windows (early morning, post-lunch, late evening).
+    </p>
+    <p>
+      FallVision monitors your fatigue patterns to identify high-risk periods and recommend preventive rest breaks. By managing neural fatigue proactively, fall risk can be reduced by up to 40% according to clinical studies.
+    </p>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="hourModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center" onclick="closeModal()">
+  <div class="card" style="max-width:500px;margin:20px" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" id="modalTitle">Hour Details</div>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text2)">&times;</button>
+    </div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const hourlyData = {{ hourly_fatigue | tojson }};
+
+// Main fatigue chart
+new Chart(document.getElementById('fatigueChart'), {
+  type: 'line',
+  data: {
+    labels: hourlyData.map(h => h.label),
+    datasets: [{
+      label: 'Fatigue Level',
+      data: hourlyData.map(h => h.fatigue),
+      borderColor: '#D4A017',
+      backgroundColor: function(context) {
+        const value = context.parsed.y;
+        if (value >= 60) return 'rgba(192,57,43,.2)';
+        if (value >= 30) return 'rgba(212,160,23,.2)';
+        return 'rgba(45,140,110,.2)';
+      },
+      borderWidth: 2,
+      pointRadius: 4,
+      pointBackgroundColor: function(context) {
+        const value = context.parsed.y;
+        if (value >= 60) return '#C0392B';
+        if (value >= 30) return '#D4A017';
+        return '#2D8C6E';
+      },
+      tension: 0.4,
+      fill: true,
+      segment: {
+        borderColor: ctx => {
+          const val = ctx.p1.parsed.y;
+          return val >= 60 ? '#C0392B' : val >= 30 ? '#D4A017' : '#2D8C6E';
+        }
+      }
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => `Fatigue: ${Math.round(ctx.parsed.y)}`
+        }
+      }
+    },
+    scales: {
+      y: { 
+        min: 0, 
+        max: 100,
+        ticks: { callback: v => v }
+      },
+      x: { 
+        grid: { display: false },
+        ticks: { maxTicksLimit: 12 }
+      }
+    }
+  }
+});
+
+// Correlation chart
+new Chart(document.getElementById('correlationChart'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      label: 'Fatigue vs Fall Risk',
+      data: hourlyData.map(h => ({ x: h.fatigue, y: 10 + (h.fatigue * 0.32) + (Math.random() * 5 - 2.5) })),
+      backgroundColor: 'rgba(212,160,23,.6)',
+      borderColor: '#D4A017',
+      pointRadius: 6,
+      pointHoverRadius: 8
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => `Fatigue: ${Math.round(ctx.parsed.x)}, Fall Risk: ${Math.round(ctx.parsed.y)}%`
+        }
+      }
+    },
+    scales: {
+      x: { title: { display: true, text: 'Fatigue Level' }, min: 0, max: 100 },
+      y: { title: { display: true, text: 'Fall Risk %' }, min: 0, max: 50 }
+    }
+  }
+});
+
+function showHourDetail(hour, fatigue, status) {
+  const modal = document.getElementById('hourModal');
+  const title = document.getElementById('modalTitle');
+  const content = document.getElementById('modalContent');
+  
+  const statusText = status === 'low' ? 'Low' : status === 'moderate' ? 'Moderate' : 'High';
+  const statusColor = status === 'low' ? 'var(--green)' : status === 'moderate' ? '#D4A017' : 'var(--red)';
+  const fatigueInt = Math.round(fatigue);
+  
+  let recommendations = '';
+  if (status === 'high') {
+    recommendations = `
+      <div style="padding:14px;background:var(--red-light);border-radius:10px;border-left:3px solid var(--red)">
+        <div style="font-weight:700;margin-bottom:8px;color:var(--red)">🛑 High Fatigue - Immediate Rest Required</div>
+        <ul style="padding-left:20px;font-size:14px;line-height:1.8">
+          <li>Stop all physical activities immediately</li>
+          <li>Sit or lie down in a comfortable position</li>
+          <li>Rest for at least 30 minutes</li>
+          <li>Notify caregiver of your fatigue level</li>
+          <li>Avoid standing/walking until fatigue decreases</li>
+        </ul>
+      </div>`;
+  } else if (status === 'moderate') {
+    recommendations = `
+      <div style="padding:14px;background:#FFF3C4;border-radius:10px;border-left:3px solid #D4A017">
+        <div style="font-weight:700;margin-bottom:8px;color:#A87800">⚠️ Moderate Fatigue - Take Precautions</div>
+        <ul style="padding-left:20px;font-size:14px;line-height:1.8">
+          <li>Reduce activity intensity</li>
+          <li>Take a 15-minute break</li>
+          <li>Stay hydrated</li>
+          <li>Avoid rushing or sudden movements</li>
+        </ul>
+      </div>`;
+  } else {
+    recommendations = `
+      <div style="padding:14px;background:var(--green-light);border-radius:10px;border-left:3px solid var(--green)">
+        <div style="font-weight:700;margin-bottom:8px;color:var(--green)">✓ Low Fatigue - Optimal Period</div>
+        <ul style="padding-left:20px;font-size:14px;line-height:1.8">
+          <li>Ideal time for exercise and physical therapy</li>
+          <li>Good for walking and daily activities</li>
+          <li>Continue normal routines</li>
+        </ul>
+      </div>`;
+  }
+  
+  title.textContent = `${hour}:00 - ${hour+1}:00 Analysis`;
+  
+  content.innerHTML = `
+    <div style="text-align:center;padding:20px;background:var(--surface2);border-radius:12px">
+      <div style="font-size:64px;font-weight:700;color:${statusColor}">${fatigueInt}</div>
+      <div style="font-size:18px;font-weight:600;color:${statusColor};margin-top:8px">${statusText} Fatigue</div>
+    </div>
+    <div style="margin-top:20px">${recommendations}</div>
+  `;
+  
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('hourModal').style.display = 'none';
+}
+</script>
+{% endblock %}

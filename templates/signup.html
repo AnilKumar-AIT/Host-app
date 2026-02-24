@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Create Account — FallVision</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--yellow:#D4A017;--yellow-light:#FFF3C4;--yellow-dark:#A87800;--text:#1A1916;--text2:#6B6860;--text3:#9B9890;--surface:#FFFFFF;--bg:#F9F8F5;--border:#E8E6DF;--red:#C0392B;--green:#2D8C6E;--font-display:'DM Serif Display',serif;--font-sans:'DM Sans',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);min-height:100vh;display:flex}
+.auth-split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+.auth-panel{background:linear-gradient(150deg,#1A1916 0%,#2d2722 100%);padding:60px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.auth-panel::before{content:'';position:absolute;top:-100px;right:-100px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(212,160,23,.2) 0%,transparent 70%)}
+.panel-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.panel-logo .icon{width:38px;height:38px;background:var(--yellow);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.panel-logo .name{font-family:var(--font-display);font-size:22px;color:#fff}.panel-logo .name span{color:var(--yellow)}
+.panel-hero h2{font-family:var(--font-display);font-size:36px;color:#fff;line-height:1.1;margin-bottom:16px}
+.panel-hero p{font-size:15px;color:rgba(255,255,255,.6);line-height:1.75;max-width:340px}
+.benefits{margin-top:28px;display:flex;flex-direction:column;gap:12px}
+.benefit{display:flex;align-items:flex-start;gap:12px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5}
+.benefit-icon{width:28px;height:28px;border-radius:8px;background:rgba(212,160,23,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:var(--yellow)}
+.panel-footer{font-size:12px;color:rgba(255,255,255,.3)}
+.auth-form-area{display:flex;align-items:center;justify-content:center;padding:40px}
+.auth-form-box{width:100%;max-width:440px}
+.auth-form-box h1{font-family:var(--font-display);font-size:34px;margin-bottom:6px;letter-spacing:-.3px}
+.auth-form-box .sub{font-size:14px;color:var(--text2);margin-bottom:32px}.auth-form-box .sub a{color:var(--yellow-dark);font-weight:600;text-decoration:none}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:7px}
+.form-group input,.form-group select{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);font-family:var(--font-sans);font-size:15px;color:var(--text);background:var(--surface);transition:.15s;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(212,160,23,.12)}
+.form-group .input-wrap{position:relative}
+.form-group .input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px}
+.form-group .has-icon input,.form-group .has-icon select{padding-left:40px}
+.pw-strength{height:4px;border-radius:2px;margin-top:6px;background:var(--border);overflow:hidden}
+.pw-fill{height:100%;border-radius:2px;transition:all .3s;width:0}
+.pw-hint{font-size:12px;color:var(--text3);margin-top:5px}
+.btn-submit{width:100%;padding:14px;border-radius:12px;border:none;background:var(--yellow);font-family:var(--font-sans);font-size:15px;font-weight:700;cursor:pointer;transition:.18s;color:#000;margin-top:8px}
+.btn-submit:hover{background:var(--yellow-dark);color:#fff}
+.error-box{background:#fdecea;border:1px solid #f5c6c2;border-radius:10px;padding:12px 14px;font-size:14px;color:var(--red);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.terms{font-size:12px;color:var(--text3);margin-top:14px;text-align:center;line-height:1.6}
+.terms a{color:var(--yellow-dark);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="auth-split">
+  <div class="auth-panel">
+    <a href="/" class="panel-logo"><div class="icon">👁</div><div class="name">Fall<span>Vision</span></div></a>
+    <div class="panel-hero">
+      <h2>Protect the people<br/>you love most.</h2>
+      <p>Set up FallVision in minutes. Begin monitoring mobility, posture, and fall risk from day one — no hardware required to get started.</p>
+      <div class="benefits">
+        <div class="benefit"><div class="benefit-icon"><i class="fa-solid fa-bolt"></i></div>Live limb angle monitoring with real-time posture feedback</div>
+        <div class="benefit"><div class="benefit-icon"><i class="fa-solid fa-brain"></i></div>Brain-movement correlation analysis for early fall prediction</div>
+        <div class="benefit"><div class="benefit-icon"><i class="fa-solid fa-bell"></i></div>Instant caregiver alerts and Emergency Hub access</div>
+        <div class="benefit"><div class="benefit-icon"><i class="fa-solid fa-chart-line"></i></div>30-day and 60-day mobility trend reports</div>
+        <div class="benefit"><div class="benefit-icon"><i class="fa-solid fa-shield-halved"></i></div>HIPAA-compliant encrypted data at rest and in transit</div>
+      </div>
+    </div>
+    <div class="panel-footer">© 2025 FallVision Health Technologies · HIPAA Compliant</div>
+  </div>
+
+  <div class="auth-form-area">
+    <div class="auth-form-box">
+      <h1>Create Account</h1>
+      <p class="sub">Already have an account? <a href="/login">Sign in here</a></p>
+
+      {% if error %}
+      <div class="error-box"><i class="fa-solid fa-circle-exclamation"></i>{{ error }}</div>
+      {% endif %}
+
+      <form method="POST">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name</label>
+            <div class="input-wrap has-icon">
+              <i class="fa-solid fa-user input-icon"></i>
+              <input type="text" name="name" placeholder="Eleanor Patel" required/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <div class="input-wrap has-icon">
+              <i class="fa-solid fa-user-nurse input-icon"></i>
+              <select name="role">
+                <option>Patient</option>
+                <option>Caregiver</option>
+                <option>Clinician</option>
+                <option>Family Member</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <div class="input-wrap has-icon">
+            <i class="fa-solid fa-envelope input-icon"></i>
+            <input type="email" name="email" placeholder="you@example.com" required/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrap has-icon">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" name="password" id="pw" placeholder="Min. 6 characters" required oninput="checkPw(this.value)"/>
+          </div>
+          <div class="pw-strength"><div class="pw-fill" id="pwFill"></div></div>
+          <div class="pw-hint" id="pwHint">Enter a password to see strength</div>
+        </div>
+        <button type="submit" class="btn-submit"><i class="fa-solid fa-user-plus"></i> Create My Account</button>
+        <p class="terms">By creating an account you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. Your health data is protected under HIPAA.</p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function checkPw(v){
+  const fill=document.getElementById('pwFill');const hint=document.getElementById('pwHint');
+  let score=0;let msg='';let color='';
+  if(v.length>=6)score++;if(v.length>=10)score++;if(/[A-Z]/.test(v))score++;if(/[0-9]/.test(v))score++;if(/[^a-zA-Z0-9]/.test(v))score++;
+  const pct=[0,20,40,65,85,100][score];
+  const colors=['','#C0392B','#E67E22','#D4A017','#27AE60','#1A8A5A'][score];
+  const msgs=['','Very weak','Weak','Fair','Strong','Excellent'][score];
+  fill.style.width=pct+'%';fill.style.background=colors;hint.textContent=msgs?`Strength: ${msgs}`:'';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>{% block title %}FallVision{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Design Tokens ── */
+:root{
+  --bg:#F9F8F5;
+  --surface:#FFFFFF;
+  --surface2:#F3F2EE;
+  --border:#E8E6DF;
+  --text:#1A1916;
+  --text2:#6B6860;
+  --text3:#9B9890;
+  --yellow:#D4A017;
+  --yellow-light:#FFF3C4;
+  --yellow-mid:#F5C842;
+  --yellow-dark:#A87800;
+  --green:#2D8C6E;
+  --green-light:#E6F5F0;
+  --red:#C0392B;
+  --red-light:#FDECEA;
+  --blue:#2563EB;
+  --blue-light:#EFF6FF;
+  --sidebar-w:240px;
+  --nav-h:60px;
+  --radius:12px;
+  --radius-lg:20px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+  --shadow-md:0 4px 24px rgba(0,0,0,.10);
+  --font-display:'DM Serif Display',serif;
+  --font-sans:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
+
+/* ── App Shell ── */
+.app-shell{display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;
+  height:100vh;z-index:200;padding:0 0 20px;
+}
+.sidebar-logo{
+  display:flex;align-items:center;gap:10px;
+  padding:20px 20px 16px;border-bottom:1px solid var(--border);
+  text-decoration:none;
+}
+.sidebar-logo .logo-icon{
+  width:36px;height:36px;background:var(--yellow);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.sidebar-logo .logo-text{font-family:var(--font-display);font-size:20px;color:var(--text);letter-spacing:-.3px}
+.sidebar-logo .logo-text span{color:var(--yellow-dark)}
+
+.sidebar-section{padding:16px 12px 4px;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--text3);text-transform:uppercase}
+
+.sidebar-nav{flex:1;padding:8px 12px}
+.sidebar-nav a{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:var(--radius);
+  text-decoration:none;color:var(--text2);font-weight:500;font-size:14px;
+  transition:all .18s;margin-bottom:2px;
+}
+.sidebar-nav a:hover{background:var(--surface2);color:var(--text)}
+.sidebar-nav a.active{background:var(--yellow-light);color:var(--yellow-dark);font-weight:600}
+.sidebar-nav a .nav-icon{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+.sidebar-nav a .nav-badge{
+  margin-left:auto;background:var(--red);color:#fff;
+  font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;
+}
+
+.sidebar-profile{
+  margin:0 12px;padding:14px;border-radius:var(--radius);
+  background:var(--surface2);border:1px solid var(--border);
+}
+.sidebar-profile .prof-name{font-weight:600;font-size:14px;color:var(--text)}
+.sidebar-profile .prof-role{font-size:12px;color:var(--text3);margin-top:1px}
+.sidebar-profile .prof-row{display:flex;align-items:center;justify-content:space-between}
+.sidebar-profile .avatar{
+  width:34px;height:34px;border-radius:50%;background:var(--yellow);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;
+}
+.sidebar-profile .settings-btn{
+  background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;
+  padding:4px;border-radius:6px;transition:color .15s;
+}
+.sidebar-profile .settings-btn:hover{color:var(--yellow-dark)}
+
+/* ── Top Nav ── */
+.main-area{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh}
+.topnav{
+  height:var(--nav-h);background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 28px;gap:8px;position:sticky;top:0;z-index:100;
+}
+.topnav-left{font-family:var(--font-display);font-size:20px;letter-spacing:-.3px;flex:1}
+.topnav-left span{color:var(--yellow-dark)}
+.topnav-links{display:flex;align-items:center;gap:4px}
+.topnav-links a{
+  text-decoration:none;color:var(--text2);font-size:14px;font-weight:500;
+  padding:6px 14px;border-radius:8px;transition:all .15s;
+}
+.topnav-links a:hover{background:var(--surface2);color:var(--text)}
+.topnav-links a.active{background:var(--yellow-light);color:var(--yellow-dark);font-weight:600}
+.topnav-links .btn-logout{
+  background:var(--yellow);color:#000;font-weight:600;margin-left:8px;
+}
+.topnav-links .btn-logout:hover{background:var(--yellow-dark);color:#fff}
+.live-chip{
+  display:flex;align-items:center;gap:6px;background:var(--green-light);
+  color:var(--green);font-size:12px;font-weight:600;padding:5px 12px;
+  border-radius:999px;margin-right:8px;
+}
+.live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+
+/* ── Page Body ── */
+.page-body{flex:1;padding:28px 32px;max-width:1400px;width:100%}
+
+/* ── KPI Cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpi-card{
+  background:var(--surface);border-radius:var(--radius-lg);padding:20px 22px;
+  border:1px solid var(--border);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;
+}
+.kpi-card::before{
+  content:'';position:absolute;top:0;right:0;
+  width:80px;height:80px;border-radius:50%;opacity:.06;
+  background:var(--accent-color,var(--yellow));transform:translate(20px,-20px);
+}
+.kpi-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.kpi-value{font-family:var(--font-display);font-size:36px;letter-spacing:-1px;line-height:1}
+.kpi-label{font-size:13px;color:var(--text2);font-weight:500}
+.kpi-sub{font-size:12px;color:var(--text3)}
+.kpi-trend{
+  display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;
+  padding:2px 8px;border-radius:999px;
+}
+.trend-up{background:#e6f5f0;color:var(--green)}
+.trend-down{background:var(--red-light);color:var(--red)}
+.trend-flat{background:var(--yellow-light);color:var(--yellow-dark)}
+
+/* ── Cards / Panels ── */
+.card{
+  background:var(--surface);border-radius:var(--radius-lg);padding:24px;
+  border:1px solid var(--border);box-shadow:var(--shadow);
+}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-title{font-family:var(--font-display);font-size:18px;letter-spacing:-.2px}
+.card-subtitle{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* ── Grid Layouts ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.grid-65-35{display:grid;grid-template-columns:1.85fr 1fr;gap:20px}
+
+/* ── Gauge ── */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.gauge-svg{transform:rotate(-90deg)}
+.gauge-label{font-family:var(--font-mono);font-size:24px;font-weight:600;color:var(--text);letter-spacing:-1px}
+.gauge-sub{font-size:12px;color:var(--text2)}
+
+/* ── Progress Bar ── */
+.progress-bar{height:8px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;border-radius:999px;transition:width .6s ease}
+
+/* ── Tables ── */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.data-table td{padding:11px 12px;font-size:14px;border-bottom:1px solid var(--border)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--surface2)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge-green{background:var(--green-light);color:var(--green)}
+.badge-yellow{background:var(--yellow-light);color:var(--yellow-dark)}
+.badge-red{background:var(--red-light);color:var(--red)}
+
+/* ── Alert cards ── */
+.alert-item{
+  display:flex;gap:16px;align-items:flex-start;padding:16px;border-radius:var(--radius);
+  border:1px solid var(--border);margin-bottom:10px;background:var(--surface);
+}
+.alert-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;font-family:var(--font-sans);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .18s;text-decoration:none}
+.btn-primary{background:var(--yellow);color:#000}
+.btn-primary:hover{background:var(--yellow-dark);color:#fff}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
+.btn-outline:hover{border-color:var(--yellow);background:var(--yellow-light)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:#a93226}
+.btn-sm{padding:7px 14px;font-size:13px}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px;width:fit-content}
+.tab-btn{padding:7px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text2);transition:all .15s}
+.tab-btn.active{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* ── Insight Box ── */
+.insight-box{
+  background:linear-gradient(135deg,var(--yellow-light),#fff9e6);
+  border:1px solid #e8d898;border-radius:var(--radius);padding:16px 18px;margin-top:16px;
+}
+.insight-box .insight-head{font-weight:600;font-size:14px;color:var(--yellow-dark);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.insight-box p{font-size:13px;color:#7a6520;line-height:1.65}
+
+/* ── Limb selector ── */
+.limb-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.limb-btn{
+  padding:16px;border-radius:var(--radius);border:2px solid var(--border);
+  background:var(--surface);cursor:pointer;text-align:center;transition:all .18s;
+}
+.limb-btn:hover{border-color:var(--yellow);background:var(--yellow-light)}
+.limb-btn.active{border-color:var(--yellow-dark);background:var(--yellow-light)}
+.limb-btn .limb-icon{font-size:28px;margin-bottom:8px}
+.limb-btn .limb-name{font-weight:600;font-size:14px;color:var(--text)}
+.limb-btn .limb-angle{font-family:var(--font-mono);font-size:13px;color:var(--yellow-dark);margin-top:2px}
+
+/* ── Risk Meter ── */
+.risk-meter{position:relative;padding:20px;text-align:center}
+.risk-level{font-family:var(--font-display);font-size:42px;letter-spacing:-1.5px}
+.risk-label{font-size:13px;color:var(--text2);margin-top:4px}
+
+/* ── Responsive ── */
+@media(max-width:1100px){.kpi-grid{grid-template-columns:1fr 1fr}.grid-65-35{grid-template-columns:1fr}}
+@media(max-width:800px){.sidebar{transform:translateX(-100%)}.main-area{margin-left:0}.kpi-grid{grid-template-columns:1fr}}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+      <div class="logo-icon">👁</div>
+      <div class="logo-text">Fall<span>Vision</span></div>
+    </a>
+
+        <div class="sidebar-section">Monitoring</div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' }}">
+        <span class="nav-icon"><i class="fa-solid fa-house"></i></span> Dashboard
+      </a>
+      <a href="{{ url_for('detection') }}" class="{{ 'active' if request.endpoint=='detection' }}">
+        <span class="nav-icon"><i class="fa-solid fa-person-walking"></i></span> Detection
+      </a>
+      <a href="{{ url_for('threshold_monitor') }}" class="{{ 'active' if request.endpoint=='threshold_monitor' }}">
+        <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span> Threshold Monitor
+      </a>
+      <a href="{{ url_for('coordination_matrix') }}" class="{{ 'active' if request.endpoint=='coordination_matrix' }}">
+        <span class="nav-icon"><i class="fa-solid fa-diagram-project"></i></span> Coordination
+      </a>
+      <a href="{{ url_for('records') }}" class="{{ 'active' if request.endpoint=='records' }}">
+        <span class="nav-icon"><i class="fa-solid fa-clipboard-list"></i></span> Past Records
+      </a>
+      <a href="{{ url_for('trends') }}" class="{{ 'active' if request.endpoint=='trends' }}">
+        <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span> Trends
+      </a>
+    </nav>
+
+    <div class="sidebar-section">Brain Analytics</div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('brain_heatmap') }}" class="{{ 'active' if request.endpoint=='brain_heatmap' }}">
+        <span class="nav-icon"><i class="fa-solid fa-brain"></i></span> Brain Heatmap
+      </a>
+      <a href="{{ url_for('neural_fatigue') }}" class="{{ 'active' if request.endpoint=='neural_fatigue' }}">
+        <span class="nav-icon"><i class="fa-solid fa-battery-half"></i></span> Neural Fatigue
+      </a>
+    </nav>
+
+    <div class="sidebar-section">Safety</div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('emergency') }}" class="{{ 'active' if request.endpoint=='emergency' }}">
+        <span class="nav-icon"><i class="fa-solid fa-triangle-exclamation"></i></span> Emergency Hub
+        <span class="nav-badge">3</span>
+      </a>
+    </nav>
+
+    <div style="flex:1"></div>
+
+    <!-- Profile -->
+    <div class="sidebar-profile">
+      <div class="prof-row">
+        <div>
+          <div class="avatar">{{ user.name[0].upper() }}</div>
+        </div>
+        <button class="settings-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+      </div>
+      <div class="prof-name" style="margin-top:10px">{{ user.name }}</div>
+      <div class="prof-role">{{ user.role }}</div>
+    </div>
+  </aside>
+
+  <!-- Main area -->
+  <div class="main-area">
+    <!-- Top Nav -->
+    <nav class="topnav">
+      <div class="topnav-left">{% block page_title %}Dashboard{% endblock %}</div>
+      <div class="live-chip"><div class="live-dot"></div>Live Monitoring</div>
+      <div class="topnav-links">
+        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' }}">Home</a>
+        <a href="{{ url_for('faq') }}" class="{{ 'active' if request.endpoint=='faq' }}">FAQ</a>
+        <a href="{{ url_for('support') }}" class="{{ 'active' if request.endpoint=='support' }}">Support</a>
+        <a href="{{ url_for('resources') }}" class="{{ 'active' if request.endpoint=='resources' }}">Resources</a>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="page-body">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

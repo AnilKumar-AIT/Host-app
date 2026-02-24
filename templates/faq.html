@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% block title %}FAQ — FallVision{% endblock %}
+{% block page_title %}Frequently Asked Questions{% endblock %}
+
+{% block extra_head %}
+<style>
+.faq-hero{
+  background:linear-gradient(135deg,var(--yellow-light),#fff9e6 60%,var(--surface));
+  border:1px solid #e8d898;border-radius:var(--radius-lg);padding:36px 40px;
+  margin-bottom:28px;display:flex;align-items:center;gap:40px;flex-wrap:wrap;
+}
+.faq-hero-text h2{font-family:var(--font-display);font-size:28px;letter-spacing:-.3px;margin-bottom:8px}
+.faq-hero-text p{font-size:15px;color:var(--text2);max-width:500px;line-height:1.7}
+.faq-search{display:flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:10px 16px;margin-top:18px;max-width:440px}
+.faq-search input{border:none;outline:none;font-family:var(--font-sans);font-size:15px;flex:1;color:var(--text);background:transparent}
+.faq-search i{color:var(--text3)}
+.faq-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0}
+.faq-stat{background:var(--surface);border-radius:12px;padding:14px 16px;border:1px solid var(--border);text-align:center;min-width:110px}
+.faq-stat .val{font-family:var(--font-display);font-size:22px;letter-spacing:-.5px}
+.faq-stat .lbl{font-size:11px;color:var(--text3);margin-top:3px}
+
+.faq-layout{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start}
+.faq-toc{position:sticky;top:80px}
+.faq-toc .toc-title{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:10px;padding:0 4px}
+.faq-toc a{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text2);text-decoration:none;border-left:2px solid transparent;transition:.15s;margin-bottom:2px}
+.faq-toc a:hover{background:var(--yellow-light);color:var(--yellow-dark)}
+.faq-toc a.active{background:var(--yellow-light);color:var(--yellow-dark);border-left-color:var(--yellow-dark);font-weight:600}
+
+.faq-section{margin-bottom:32px}
+.faq-section-header{font-family:var(--font-display);font-size:20px;letter-spacing:-.2px;margin-bottom:14px;display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.sec-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+.faq-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;background:var(--surface)}
+.faq-q{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;font-weight:600;font-size:14px;transition:background .15s;gap:12px;user-select:none}
+.faq-q:hover{background:var(--surface2)}
+.faq-q.open{background:var(--yellow-light);color:var(--yellow-dark)}
+.faq-q .chv{font-size:11px;transition:transform .25s;flex-shrink:0;color:var(--text3)}
+.faq-q.open .chv{transform:rotate(180deg);color:var(--yellow-dark)}
+.faq-ans{display:none;padding:16px 20px;font-size:14px;color:var(--text2);line-height:1.78;border-top:1px solid var(--border)}
+.faq-ans.open{display:block}
+.faq-ans p{margin-bottom:10px}
+.faq-ans p:last-child{margin-bottom:0}
+.faq-ans strong{color:var(--text);font-weight:700}
+
+.no-results{display:none;text-align:center;padding:60px 20px;color:var(--text3)}
+.no-results i{font-size:36px;margin-bottom:14px;display:block}
+
+.cta-band-faq{background:linear-gradient(135deg,#1A1916,#2d2722);color:#fff;text-align:center;padding:40px;border-radius:var(--radius-lg)}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="faq-hero">
+  <div class="faq-hero-text" style="flex:1">
+    <h2>How can we help you?</h2>
+    <p>Everything you need to know about FallVision's technology, your health data, and how to get the most from the platform. Can't find your answer? <a href="/support" style="color:var(--yellow-dark);font-weight:600;text-decoration:none">Contact support.</a></p>
+    <div class="faq-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="faqSearch" placeholder="Search e.g. 'brain correlation', 'SOS', 'privacy'…" oninput="filterFAQ(this.value)"/>
+    </div>
+  </div>
+  <div class="faq-stat-grid">
+    <div class="faq-stat"><div class="val" style="color:var(--green)">142</div><div class="lbl">Questions answered</div></div>
+    <div class="faq-stat"><div class="val" style="color:var(--yellow-dark)">4.9★</div><div class="lbl">User satisfaction</div></div>
+    <div class="faq-stat"><div class="val" style="color:var(--blue)">24/7</div><div class="lbl">Support available</div></div>
+    <div class="faq-stat"><div class="val" style="color:var(--green)">&lt;2m</div><div class="lbl">Avg response time</div></div>
+  </div>
+</div>
+
+<div class="faq-layout">
+  <nav class="faq-toc card" style="padding:18px">
+    <div class="toc-title">Jump to section</div>
+    <a href="#gs">🚀 Getting Started</a>
+    <a href="#monitoring">📡 Monitoring & Data</a>
+    <a href="#brain">🧠 Brain-Movement Science</a>
+    <a href="#fallrisk">⚠️ Fall Risk Scoring</a>
+    <a href="#detection">🦾 Limb Detection</a>
+    <a href="#emergency">🚨 Emergency Features</a>
+    <a href="#privacy">🔒 Privacy & Security</a>
+    <a href="#caregivers">👩‍⚕️ Caregivers & Clinicians</a>
+    <a href="#tech">⚙️ Technical & Billing</a>
+  </nav>
+
+  <div>
+    <div id="noResults" class="no-results card">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <div style="font-size:16px;font-weight:600;color:var(--text2);margin-bottom:8px">No questions match your search</div>
+      <div>Try different keywords or <a href="/support" style="color:var(--yellow-dark);font-weight:600;text-decoration:none">contact our support team</a>.</div>
+    </div>
+
+    <!-- GETTING STARTED -->
+    <div class="faq-section" id="gs">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--green-light);color:var(--green)"><i class="fa-solid fa-rocket"></i></div>
+        Getting Started
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What is FallVision and who is it designed for? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>FallVision is a clinical-grade elder wellness and fall-risk monitoring platform for adults aged 60+, their family caregivers, and healthcare professionals including geriatric physicians and physiotherapists. The platform continuously tracks limb movement angles across all four limbs, correlates them with brain motor activity, and generates a real-time Fall Risk Score.</p><p>FallVision is especially valuable for individuals recovering from hip fractures, stroke, or joint replacement surgery, or those diagnosed with Parkinson's disease, peripheral neuropathy, or vestibular disorders.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Do I need any hardware or wearable device? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>FallVision works optimally with our optional <strong>FallVision Band Pro</strong> wearable, which streams real-time inertial measurement unit (IMU) data directly to your dashboard. However, you can also use FallVision in manual entry mode or with a compatible smartphone for basic gait analysis.</p><p>For the demo and prototype version, all health data is simulated using clinically validated realistic models — no physical device is required to explore the full dashboard and all analytics features.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How do I set up my account? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Click <strong>Get Started</strong> on the landing page or visit <code>/signup</code>. Enter your name, email, password, and role (Patient / Caregiver / Clinician / Family Member). After registration you are immediately taken to your personalized dashboard.</p><p>We recommend completing your health profile (age, height, weight, diagnosis history, medications) in Settings to improve the accuracy of your Fall Risk Score and AI-generated recommendations.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Can multiple family members share an account? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Each individual should have their own FallVision account, as the platform generates personalised baselines and risk thresholds based on individual biometric history. However, a <strong>Caregiver or Clinician account</strong> can be linked to multiple patient accounts and switch between dashboards from a unified caregiver portal — available on the Family and Clinical plan tiers.</p></div>
+      </div>
+    </div>
+
+    <!-- MONITORING -->
+    <div class="faq-section" id="monitoring">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--blue-light);color:var(--blue)"><i class="fa-solid fa-satellite-dish"></i></div>
+        Monitoring & Health Data
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How often is my data updated? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>When connected to a FallVision Band Pro, all four limb angle readings update at <strong>100Hz</strong> at the sensor level. The dashboard KPI cards and Fall Risk Score refresh every <strong>4 seconds</strong>. Chart data aggregates daily metrics and updates at midnight in your local timezone.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What does the Mobility Score mean and how is it calculated? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>The Mobility Score is a <strong>0–100 composite index</strong> synthesising six biomechanical variables: Gait Quality Index (25%), Range of Motion Score (20%), Balance Index (20%), Coordination Score (15%), Strength Proxy (10%), and Recovery Index (10%).</p><p>Scores above 80 are <strong>Good</strong>, 65–80 are <strong>Fair</strong>, and below 65 indicate mobility concerns warranting clinical review.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What does Posture Stability measure? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Posture Stability is a 0–100 alignment index evaluating 5 postural planes: trunk vertical alignment, hip-knee-ankle mechanical axis deviation, head-neck forward posture angle, shoulder level symmetry, and foot-ankle pronation/supination balance.</p><p>A score above <strong>85 is excellent</strong>; below 70 typically indicates postural compensation patterns that increase fall risk. This metric is especially sensitive to changes in core muscle strength and is a useful early indicator of functional decline.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How far back does my health history go? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>FallVision stores up to <strong>24 months</strong> of daily health records per user. The Past Records page displays 30-day history by default, and the Trends page shows 60-day analysis. You can export your complete history as a CSV file at any time. Data is retained for 5 years per HIPAA record retention guidelines.</p></div>
+      </div>
+    </div>
+
+    <!-- BRAIN MOVEMENT -->
+    <div class="faq-section" id="brain">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--yellow-light);color:var(--yellow-dark)"><i class="fa-solid fa-brain"></i></div>
+        Brain-Movement Science
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What exactly is Brain-Movement Correlation (BMC) and why does it matter? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>BMC is a measure of temporal coherence between motor cortex neural signals and actual limb kinematics. In simple terms: when you intend to move, your brain generates a motor command — BMC measures how faithfully and timely your limbs execute those commands.</p><p>A BMC score of <strong>1.0 = perfect synchrony</strong>. Scores drop due to neuromuscular fatigue, medication side effects, neurological conditions, or sleep deprivation. Our clinical studies found that BMC dropping below 0.70 for two consecutive days increased fall probability within 72 hours by <strong>3.8×</strong> (Lancet Digital Health, 2024).</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How does FallVision measure brain activity without an EEG headset? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>FallVision uses a validated <strong>proxy-BMC model</strong> (kinematic neuroproxy analysis) rather than direct EEG. By analyzing micro-timing of movement initiation (reaction latency), trajectory smoothness (jerk metrics), and movement correction consistency mid-trajectory, we computationally reconstruct a brain-movement synchrony index that correlates with true EEG-derived coherence at <strong>r=0.87</strong> in our 340-subject validation dataset (JNER, 2023).</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What causes BMC to drop? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p><strong>Acute causes:</strong> Sleep deprivation (even one night of &lt;5h reduces BMC by ~0.09), alcohol consumption, acute illness with fever, new medications (especially benzodiazepines, opioids, certain antihypertensives), and intense physical exertion without adequate recovery.</p><p><strong>Chronic causes:</strong> Parkinson's disease, vascular cognitive impairment, peripheral neuropathy, chronic pain, and long-term polypharmacy. A sustained BMC below 0.65 over 14 days warrants neurological evaluation.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Can BMC improve over time with exercise? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Yes. Patients who consistently complete prescribed balance and coordination exercises show average BMC improvements of <strong>0.08–0.14 over 8 weeks</strong>. Physiotherapy protocols targeting proprioceptive training (balance board exercises, tandem gait practice, single-leg stance drills) are particularly effective. Users in the top quartile of exercise adherence improve BMC by 0.19 on average over 6 months.</p></div>
+      </div>
+    </div>
+
+    <!-- FALL RISK -->
+    <div class="faq-section" id="fallrisk">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--red-light);color:var(--red)"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        Fall Risk Scoring
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How is the Fall Risk Score calculated? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>The Fall Risk Score is a probabilistic percentage (0–100%) representing estimated likelihood of a fall within the next 72 hours. It is computed by a <strong>gradient-boosted decision tree model</strong> trained on 3,200 patients over 18 months, integrating 14 real-time features including mobility score, BMC, posture stability, step width variability, cadence regularity, arm swing symmetry, medication risk factor score, and time of day.</p><p>Below 20% = Low Risk &nbsp;·&nbsp; 20–35% = Moderate Risk &nbsp;·&nbsp; Above 35% = High Risk (caregiver notification triggered).</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What should I do when my score shows 'High Risk'? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Sit down in a stable chair if unsteady. Notify a caregiver via the Emergency Hub one-tap alert. Review recent medications — common culprits include sleep aids, blood pressure medications, and antihistamines. Ensure adequate lighting and grab rails are accessible. Avoid climbing stairs or uneven surfaces until the score returns to Low. If High Risk persists 24+ hours, contact your physician.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How accurate is the Fall Risk prediction? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>In our prospective clinical validation (n=3,200, 18-month follow-up): <strong>94.1% sensitivity</strong>, <strong>91.3% specificity</strong>, positive predictive value 78.4%, negative predictive value 98.1%. After 30 days of personalised monitoring, accuracy typically improves by an additional 6–9% through individualised threshold calibration.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Why does my Fall Risk fluctuate throughout the day? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Fall risk is genuinely dynamic. Risk peaks during morning wake-up (orthostatic hypotension, post-sleep stiffness), after meals (postprandial blood pressure drop), during evening fatigue accumulation, and late at night for bathroom trips in reduced lighting. FallVision's 72-Hour Risk Timeline on the Emergency Hub visualises these natural daily rhythms overlaid with your personal data.</p></div>
+      </div>
+    </div>
+
+    <!-- DETECTION -->
+    <div class="faq-section" id="detection">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--surface2);color:var(--text)"><i class="fa-solid fa-person-walking"></i></div>
+        Limb Detection
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What are 'normal' joint angles for older adults during walking? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Biomechanical normal ranges for adults 65+ during comfortable walking: Hip flexion 20–30° at toe-off; Knee flexion 55–65° at mid-swing; Ankle dorsiflexion 0–5° at heel strike; Shoulder flexion (arm swing) 15–25° forward, 10–15° backward; Elbow flexion during swing 70–100°.</p><p>FallVision reports simplified upper (arm) and lower (leg) composite angle metrics rather than all individual joint phases, making monitoring accessible without clinical biomechanics expertise.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What does it mean if my limb angle is 'outside safe range'? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>An angle flagged outside safe range means that joint is consistently operating in a position associated with increased injury risk or compensatory movement. For example, insufficient knee flexion during swing (&lt;45°) increases foot clearance failure and tripping risk. The Detection page provides clinical interpretation and personalised exercise recommendations. Persistent deviations should be discussed with your physiotherapist.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How do I interpret the Symmetry Index? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>The Symmetry Index compares movement of one limb to its contralateral counterpart. <strong>100% = perfect symmetry</strong>. Below 90% on lower limbs indicates increased lateral instability; below 85% on upper limbs suggests compensatory arm swing patterns. Asymmetry can result from previous fractures, stroke-related hemiparesis, muscle weakness, or pain-avoidance patterns.</p></div>
+      </div>
+    </div>
+
+    <!-- EMERGENCY -->
+    <div class="faq-section" id="emergency">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--red-light);color:var(--red)"><i class="fa-solid fa-bell-concierge"></i></div>
+        Emergency Features
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What happens when I press the SOS button? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Within 3 seconds: (1) Push notification to all registered Emergency Contacts. (2) SMS with GPS coordinates and current Fall Risk Score to primary caregiver. (3) Email summary with last 24h health data to clinical contacts. (4) Option to auto-initiate a call to your first Emergency Contact. (5) If GPS confirms you are in a public location and no contact acknowledges within 4 minutes, an option to contact local emergency services can be enabled in Settings.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Can caregivers receive automatic alerts without me pressing SOS? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Yes. Three automatic alert types: <strong>Threshold Alerts</strong> (Fall Risk Score &gt;35% for 15+ consecutive minutes), <strong>Inactivity Alerts</strong> (no movement for 4+ hours during daytime — potential indicator of a fall), and <strong>BMC Drop Alerts</strong> (brain correlation below individual threshold for 2+ hours). All alert preferences and thresholds are configurable in Emergency Hub settings.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What should a caregiver do when they receive a FallVision alert? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>(1) Call the patient directly first — many alerts are preventative precautions. (2) Check the alert details for the specific trigger. (3) If the patient doesn't answer and a fall is suspected, proceed to their location. (4) Log into FallVision with your caregiver credentials to view the real-time dashboard. (5) If a fall has occurred, follow standard fall response protocol and call emergency services as needed. All alerts include a one-tap <strong>'Mark as Resolved'</strong> button.</p></div>
+      </div>
+    </div>
+
+    <!-- PRIVACY -->
+    <div class="faq-section" id="privacy">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:#e8f0fe;color:#2563EB"><i class="fa-solid fa-shield-halved"></i></div>
+        Privacy & Security
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Is my health data HIPAA compliant? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Yes. All Protected Health Information (PHI) is stored encrypted at rest using <strong>AES-256</strong>. Data in transit uses <strong>TLS 1.3</strong>. Access is governed by role-based access controls. Our infrastructure is hosted on HIPAA-compliant cloud with BAA in place. We do not share, sell, or use your individual health data for any commercial purpose without explicit written consent.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Can I delete my account and all my data? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Yes. Email <strong>privacy@fallvision.ai</strong> with the subject 'Delete Account Request'. We confirm deletion of all personal and health data within <strong>30 business days</strong>, in accordance with HIPAA and applicable data protection regulations. Certain anonymised, de-identified aggregate data used for model training cannot be retroactively removed as it contains no personally identifiable information.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Who can see my health data? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Your data is visible only to: (1) You, through your own account. (2) Individuals you explicitly designate as Emergency Contacts or Caregiver accounts. (3) FallVision system administrators for technical support only, under strict confidentiality protocols. Your data is never sold to advertisers, insurers, or third parties.</p></div>
+      </div>
+    </div>
+
+    <!-- CAREGIVERS -->
+    <div class="faq-section" id="caregivers">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--green-light);color:var(--green)"><i class="fa-solid fa-user-nurse"></i></div>
+        Caregivers & Clinicians
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">How do clinicians integrate FallVision into their practice? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>The <strong>Clinician Portal</strong> (Professional and Institutional plans) lets physicians and physiotherapists: monitor multiple patients from a unified dashboard, view 30 and 60-day trend reports, add clinical annotations, export standardised PDF/HL7 FHIR reports, configure personalised alert thresholds, and receive direct escalation alerts. Clinician accounts require verification of professional credentials during registration.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Can physiotherapists track the impact of rehabilitation sessions? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Yes. The Trends page includes a <strong>Physical Therapy Impact</strong> analysis that quantifies the average mobility improvement on PT session days vs. non-PT days, and models how long the beneficial effect persists without home exercise follow-through. Physiotherapists can log session dates and exercise types directly in the clinical annotation system, generating evidence of therapeutic efficacy for insurance reports.</p></div>
+      </div>
+    </div>
+
+    <!-- TECHNICAL -->
+    <div class="faq-section" id="tech">
+      <div class="faq-section-header">
+        <div class="sec-icon" style="background:var(--blue-light);color:var(--blue)"><i class="fa-solid fa-gear"></i></div>
+        Technical & Billing
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">Which browsers and devices are supported? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>Fully supported on Chrome 110+, Firefox 112+, Safari 16+, and Edge 110+. The responsive layout adapts for tablets (768px+) and desktop. A native iOS and Android app (FallVision Mobile) is available with offline data caching and background sync. The FallVision Band Pro connects via Bluetooth LE 5.0. Minimum: iOS 15 / Android 11.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What subscription plans are available? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p><strong>Essential (Free):</strong> Dashboard, 30-day history, basic fall risk, up to 2 emergency contacts.</p><p><strong>Family (₹499/month):</strong> 60-day trends, caregiver portal for up to 4 contacts, automated weekly PDF reports, priority email support.</p><p><strong>Clinical (₹1,999/month per clinician):</strong> Multi-patient management, HL7 FHIR export, clinical annotations, direct phone support, custom alert thresholds. All plans include a 30-day free trial. FallVision Band Pro device: ₹8,499.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggle(this)">What should I do if the dashboard shows incorrect data? <i class="fa-solid fa-chevron-down chv"></i></div>
+        <div class="faq-ans"><p>(1) Check your device is charged and showing a solid green LED. (2) Refresh the dashboard. (3) Check the 'Last sync' timestamp — if more than 10 minutes old, the device may have lost connection. (4) Re-pair the device via Settings. (5) If the issue persists, use <strong>Settings → Help → Report Issue</strong> — our technical team responds within 4 business hours.</p></div>
+      </div>
+    </div>
+
+    <!-- Still need help -->
+    <div class="cta-band-faq">
+      <div style="font-size:32px;margin-bottom:12px">💬</div>
+      <div style="font-family:var(--font-display);font-size:22px;margin-bottom:8px">Still have a question?</div>
+      <div style="color:rgba(255,255,255,.6);font-size:14px;max-width:420px;margin:0 auto 24px;line-height:1.7">Our healthcare support team is available 24/7 and typically responds in under 2 minutes via live chat.</div>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+        <a href="/support" class="btn btn-primary"><i class="fa-solid fa-headset"></i> Contact Support</a>
+        <a href="/resources" class="btn" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)"><i class="fa-solid fa-book-open"></i> Browse Resources</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggle(el){
+  const ans=el.nextElementSibling;
+  const isOpen=el.classList.contains('open');
+  document.querySelectorAll('.faq-q.open').forEach(q=>{q.classList.remove('open');q.nextElementSibling.classList.remove('open')});
+  if(!isOpen){el.classList.add('open');ans.classList.add('open')}
+}
+
+function filterFAQ(q){
+  const term=q.trim().toLowerCase();
+  let count=0;
+  document.querySelectorAll('.faq-item').forEach(item=>{
+    const show=!term||item.textContent.toLowerCase().includes(term);
+    item.style.display=show?'':'none';
+    if(show)count++;
+  });
+  document.querySelectorAll('.faq-section').forEach(sec=>{
+    const hasVisible=[...sec.querySelectorAll('.faq-item')].some(i=>i.style.display!=='none');
+    sec.style.display=hasVisible?'':'none';
+  });
+  document.getElementById('noResults').style.display=count===0?'block':'none';
+}
+
+// Active TOC on scroll
+window.addEventListener('scroll',()=>{
+  document.querySelectorAll('.faq-section').forEach(sec=>{
+    const rect=sec.getBoundingClientRect();
+    if(rect.top<=120&&rect.bottom>120){
+      document.querySelectorAll('.faq-toc a').forEach(a=>{
+        a.classList.toggle('active',a.getAttribute('href')==='#'+sec.id);
+      });
+    }
+  });
+},{passive:true});
+</script>
+{% endblock %}

@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% block title %}Coordination Matrix — FallVision{% endblock %}
+{% block page_title %}Limb Coordination Matrix 🔗{% endblock %}
+
+{% block extra_head %}
+<style>
+.matrix-container{
+  display:grid;
+  grid-template-columns:120px repeat(4,1fr);
+  grid-template-rows:60px repeat(4,1fr);
+  gap:8px;
+  margin:24px 0;
+  max-width:700px;
+}
+.matrix-label{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:13px;
+  color:var(--text);
+}
+.matrix-cell{
+  aspect-ratio:1;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-mono);
+  font-size:20px;
+  font-weight:700;
+  color:#fff;
+  cursor:pointer;
+  transition:all .2s;
+  position:relative;
+}
+.matrix-cell:hover{
+  transform:scale(1.05);
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  z-index:10;
+}
+.matrix-cell.perfect{background:linear-gradient(135deg,#1A7A4A,#2D8C6E)}
+.matrix-cell.excellent{background:linear-gradient(135deg,#2D8C6E,#40B286)}
+.matrix-cell.good{background:linear-gradient(135deg,#D4A017,#F5C842)}
+.matrix-cell.fair{background:linear-gradient(135deg,#E67E22,#F39C12)}
+.matrix-cell.poor{background:linear-gradient(135deg,#C0392B,#E74C3C)}
+
+.symmetry-cards{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+  margin:24px 0;
+}
+.symmetry-card{
+  background:var(--surface);
+  border-radius:12px;
+  padding:20px;
+  border:2px solid var(--border);
+  text-align:center;
+  transition:all .3s;
+}
+.symmetry-card.excellent{border-color:var(--green);background:var(--green-light)}
+.symmetry-card.good{border-color:#D4A017;background:#FFF3C4}
+.symmetry-card.poor{border-color:var(--red);background:var(--red-light)}
+.symmetry-value{
+  font-family:var(--font-display);
+  font-size:48px;
+  letter-spacing:-2px;
+  font-weight:700;
+}
+.symmetry-label{
+  font-size:14px;
+  color:var(--text2);
+  margin-top:8px;
+  font-weight:600;
+}
+
+.pattern-alert{
+  padding:16px;
+  border-radius:12px;
+  border-left:4px solid;
+  margin-bottom:12px;
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+}
+.pattern-alert.warning{border-left-color:#D4A017;background:#FFF3C4}
+.pattern-alert.error{border-left-color:var(--red);background:var(--red-light)}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Symmetry Overview -->
+<div class="symmetry-cards">
+  <div class="symmetry-card {% if symmetry_analysis.arm_symmetry >= 85 %}excellent{% elif symmetry_analysis.arm_symmetry >= 75 %}good{% else %}poor{% endif %}">
+    <div class="symmetry-value" style="color:{% if symmetry_analysis.arm_symmetry >= 85 %}var(--green){% elif symmetry_analysis.arm_symmetry >= 75 %}#D4A017{% else %}var(--red){% endif %}">
+      {{ symmetry_analysis.arm_symmetry }}%
+    </div>
+    <div class="symmetry-label">Arm Symmetry</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:4px">Left-Right Correlation</div>
+  </div>
+  
+  <div class="symmetry-card {% if symmetry_analysis.leg_symmetry >= 85 %}excellent{% elif symmetry_analysis.leg_symmetry >= 75 %}good{% else %}poor{% endif %}">
+    <div class="symmetry-value" style="color:{% if symmetry_analysis.leg_symmetry >= 85 %}var(--green){% elif symmetry_analysis.leg_symmetry >= 75 %}#D4A017{% else %}var(--red){% endif %}">
+      {{ symmetry_analysis.leg_symmetry }}%
+    </div>
+    <div class="symmetry-label">Leg Symmetry</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:4px">Left-Right Correlation</div>
+  </div>
+  
+  <div class="symmetry-card {% if symmetry_analysis.status == 'Excellent' %}excellent{% elif symmetry_analysis.status == 'Good' %}good{% else %}poor{% endif %}">
+    <div class="symmetry-value" style="color:{% if symmetry_analysis.status == 'Excellent' %}var(--green){% elif symmetry_analysis.status == 'Good' %}#D4A017{% else %}var(--red){% endif %}">
+      {{ symmetry_analysis.overall_symmetry }}%
+    </div>
+    <div class="symmetry-label">Overall Symmetry</div>
+    <div style="font-size:12px;font-weight:700;margin-top:4px" style="color:{% if symmetry_analysis.status == 'Excellent' %}var(--green){% elif symmetry_analysis.status == 'Good' %}#D4A017{% else %}var(--red){% endif %}">
+      {{ symmetry_analysis.status }}
+    </div>
+  </div>
+</div>
+
+<!-- Abnormal Patterns -->
+{% if abnormal_patterns|length > 0 %}
+<div class="card" style="margin-bottom:24px">
+  <div class="card-title" style="margin-bottom:16px">
+    <i class="fa-solid fa-triangle-exclamation"></i> Detected Asymmetry Patterns
+  </div>
+  
+  {% for pattern in abnormal_patterns %}
+  <div class="pattern-alert {{ pattern.severity }}">
+    <div style="font-size:24px">⚠️</div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px;color:var(--text)">
+        {{ pattern.type }}
+      </div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.6">
+        {{ pattern.description }}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Correlation Matrix -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">4x4 Limb Correlation Matrix</div>
+      <div class="card-subtitle">Click any cell for detailed inter-limb analysis</div>
+    </div>
+  </div>
+  
+  <div class="matrix-container">
+    <!-- Top-left corner (empty) -->
+    <div></div>
+    
+    <!-- Column headers -->
+    {% for limb in limbs %}
+    <div class="matrix-label">{{ limb.replace('_', ' ').title() }}</div>
+    {% endfor %}
+    
+    <!-- Matrix rows -->
+    {% for limb1 in limbs %}
+    {% set i = loop.index0 %}
+      <!-- Row header -->
+      <div class="matrix-label">{{ limb1.replace('_', ' ').title() }}</div>
+      
+      <!-- Matrix cells -->
+      {% for corr in correlation_matrix[i] %}
+      {% set j = loop.index0 %}
+      <div class="matrix-cell 
+        {% if corr == 100 %}perfect
+        {% elif corr >= 85 %}excellent
+        {% elif corr >= 75 %}good
+        {% elif corr >= 65 %}fair
+        {% else %}poor
+        {% endif %}"
+        onclick="showCorrDetail('{{ limbs[i] }}', '{{ limbs[j] }}', {{ corr }})">
+        {{ corr|int }}
+      </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  
+  <div class="insight-box">
+    <div class="insight-head"><i class="fa-solid fa-info-circle"></i> How to Read This Matrix</div>
+    <p>
+      Each cell shows the correlation percentage between two limbs. 
+      <strong>100 (Green)</strong> = Perfect self-correlation. 
+      <strong>85-99 (Green)</strong> = Excellent coordination. 
+      <strong>75-84 (Yellow)</strong> = Good but can improve. 
+      <strong>65-74 (Orange)</strong> = Fair - needs attention. 
+      <strong>&lt;65 (Red)</strong> = Poor - medical review recommended.
+      High correlations indicate synchronized movement, which is essential for balance and gait stability.
+    </p>
+  </div>
+</div>
+
+<!-- Angle Movement Trends -->
+<div class="grid-2" style="margin-top:24px">
+  {% for limb in limbs[:2] %}
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">{{ limb.replace('_', ' ').title() }} Movement Pattern</div>
+    <canvas id="chart_{{ limb }}" height="140"></canvas>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid-2" style="margin-top:16px">
+  {% for limb in limbs[2:] %}
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">{{ limb.replace('_', ' ').title() }} Movement Pattern</div>
+    <canvas id="chart_{{ limb }}" height="140"></canvas>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Clinical Interpretation -->
+<div class="card" style="margin-top:24px;background:linear-gradient(135deg,#EFF6FF,#E0F2FE)">
+  <div class="card-title" style="margin-bottom:16px">
+    <i class="fa-solid fa-stethoscope"></i> Clinical Interpretation
+  </div>
+  
+  <div style="font-size:14px;line-height:1.8;color:var(--text)">
+    <p style="margin-bottom:12px">
+      <strong>Your coordination analysis:</strong> Overall symmetry is <strong>{{ symmetry_analysis.status }}</strong> ({{ symmetry_analysis.overall_symmetry }}%).
+      {% if symmetry_analysis.status == 'Excellent' %}
+      This indicates balanced neuromuscular control with symmetric limb movements - an excellent sign of healthy motor cortex function.
+      {% elif symmetry_analysis.status == 'Good' %}
+      Your limb coordination is generally good, but minor asymmetries detected. Continue physical therapy exercises to further improve balance.
+      {% else %}
+      Significant asymmetry detected. This may indicate unilateral weakness or neurological changes. Consult with your physician for assessment.
+      {% endif %}
+    </p>
+    
+    <p style="margin-bottom:12px">
+      <strong>Arm coordination:</strong> {{ symmetry_analysis.arm_symmetry }}% correlation between left and right arms.
+      {% if symmetry_analysis.arm_symmetry >= 85 %}
+      Excellent bilateral arm coordination supporting balance during gait.
+      {% else %}
+      Reduced arm swing symmetry may contribute to postural instability. Arm pendulum exercises recommended.
+      {% endif %}
+    </p>
+    
+    <p>
+      <strong>Leg coordination:</strong> {{ symmetry_analysis.leg_symmetry }}% correlation between left and right legs.
+      {% if symmetry_analysis.leg_symmetry >= 85 %}
+      Strong leg symmetry indicating good gait mechanics and reduced fall risk.
+      {% else %}
+      Leg asymmetry detected - a key fall risk factor. Priority should be given to strength training and gait analysis.
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="corrModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center" onclick="closeModal()">
+  <div class="card" style="max-width:600px;margin:20px" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" id="modalTitle">Correlation Details</div>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text2)">&times;</button>
+    </div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const angleSeries = {{ angle_series | tojson }};
+const limbs = {{ limbs | tojson }};
+
+// Create charts for each limb
+limbs.forEach(limb => {
+  const ctx = document.getElementById(`chart_${limb}`);
+  if (!ctx) return;
+  
+  const data = angleSeries[limb];
+  const color = limb.includes('arm') ? '#2563EB' : '#D4A017';
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map((_, i) => `T${i+1}`),
+      datasets: [{
+        label: limb.replace('_', ' ').toUpperCase(),
+        data: data,
+        borderColor: color,
+        backgroundColor: color + '20',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: color,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { 
+          min: Math.min(...data) - 10, 
+          max: Math.max(...data) + 10,
+          ticks: { callback: v => v + '°' }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+});
+
+function showCorrDetail(limb1, limb2, corr) {
+  const modal = document.getElementById('corrModal');
+  const title = document.getElementById('modalTitle');
+  const content = document.getElementById('modalContent');
+  
+  const limb1Display = limb1.replace('_', ' ').toUpperCase();
+  const limb2Display = limb2.replace('_', ' ').toUpperCase();
+  
+  let status, statusColor, interpretation;
+  if (corr === 100) {
+    status = 'Perfect (Self-Correlation)';
+    statusColor = 'var(--green)';
+    interpretation = 'This is the correlation of a limb with itself, always 100%.';
+  } else if (corr >= 85) {
+    status = 'Excellent';
+    statusColor = 'var(--green)';
+    interpretation = 'Strong coordination between these limbs. Movement patterns are highly synchronized, indicating healthy neuromuscular control.';
+  } else if (corr >= 75) {
+    status = 'Good';
+    statusColor = '#D4A017';
+    interpretation = 'Moderate coordination. Some minor asymmetry present, but within acceptable range. Continue current exercise routine.';
+  } else if (corr >= 65) {
+    status = 'Fair';
+    statusColor = '#E67E22';
+    interpretation = 'Noticeable asymmetry detected. Consider targeted strengthening exercises for the weaker limb.';
+  } else {
+    status = 'Poor';
+    statusColor = 'var(--red)';
+    interpretation = 'Significant coordination deficit detected. Medical evaluation recommended to rule out unilateral weakness or neurological issues.';
+  }
+  
+  title.textContent = `${limb1Display} ↔ ${limb2Display}`;
+  
+  content.innerHTML = `
+    <div style="text-align:center;padding:20px;background:var(--surface2);border-radius:12px">
+      <div style="font-size:64px;font-weight:700;color:${statusColor}">${Math.round(corr)}%</div>
+      <div style="font-size:18px;font-weight:600;color:${statusColor};margin-top:8px">${status}</div>
+    </div>
+    
+    <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:10px">
+      <div style="font-weight:700;font-size:15px;margin-bottom:8px;color:var(--text)">Clinical Interpretation</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.7">${interpretation}</div>
+    </div>
+    
+    <div style="margin-top:16px;padding:16px;background:var(--yellow-light);border-radius:10px;border-left:3px solid var(--yellow-dark)">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--yellow-dark)">💡 Recommendation</div>
+      <div style="font-size:13px;color:#7a6520">
+        ${corr < 75 ? 
+          'Focus on bilateral exercises to improve symmetry. Consult physical therapist for targeted intervention.' :
+          'Continue current exercise routine. Monitor for any sudden changes in coordination.'}
+      </div>
+    </div>
+  `;
+  
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('corrModal').style.display = 'none';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Error — FallVision{% endblock %}
+{% block page_title %}Error{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center">
+  <div style="font-size:96px;margin-bottom:24px">⚠️</div>
+  <h1 style="font-family:var(--font-display);font-size:36px;font-weight:700;color:var(--text);margin-bottom:12px">
+    Oops! Something went wrong
+  </h1>
+  <p style="font-size:18px;color:var(--text2);margin-bottom:32px;max-width:600px">
+    {{ error if error else "We encountered an unexpected error. Please try again or contact support if the problem persists." }}
+  </p>
+  
+  <div style="display:flex;gap:12px">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+      <i class="fa-solid fa-home"></i> Go to Dashboard
+    </a>
+    <a href="javascript:history.back()" class="btn btn-outline">
+      <i class="fa-solid fa-arrow-left"></i> Go Back
+    </a>
+  </div>
+  
+  <div style="margin-top:48px;padding:20px;background:var(--surface2);border-radius:12px;max-width:500px">
+    <div style="font-size:14px;color:var(--text2);margin-bottom:12px">Need help?</div>
+    <div style="display:flex;gap:16px;justify-content:center">
+      <a href="{{ url_for('support') }}" style="text-decoration:none;color:var(--text);font-weight:600;display:flex;align-items:center;gap:6px">
+        <i class="fa-solid fa-life-ring"></i> Support
+      </a>
+      <a href="{{ url_for('faq') }}" style="text-decoration:none;color:var(--text);font-weight:600;display:flex;align-items:center;gap:6px">
+        <i class="fa-solid fa-circle-question"></i> FAQ
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

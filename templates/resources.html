@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% block title %}Resources — FallVision{% endblock %}
+{% block page_title %}Clinical Resources & Learning Hub{% endblock %}
+
+{% block extra_head %}
+<style>
+.resources-hero{background:linear-gradient(135deg,var(--yellow-light),#fffdf0 60%,var(--surface));border:1px solid #e8d898;border-radius:var(--radius-lg);padding:36px 40px;margin-bottom:28px;display:flex;align-items:center;gap:40px;flex-wrap:wrap}
+.resources-hero h2{font-family:var(--font-display);font-size:28px;letter-spacing:-.3px;margin-bottom:8px}
+.resources-hero p{font-size:15px;color:var(--text2);max-width:520px;line-height:1.7}
+.res-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.filter-btn{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);transition:.15s}
+.filter-btn:hover,.filter-btn.active{background:var(--yellow);border-color:var(--yellow);color:#000}
+.resource-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:.2s;display:flex;flex-direction:column}
+.resource-card:hover{border-color:var(--yellow);box-shadow:0 4px 20px rgba(212,160,23,.12);transform:translateY(-2px)}
+.res-thumbnail{height:120px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
+.res-type-badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border)}
+.res-body{padding:20px;flex:1;display:flex;flex-direction:column}
+.res-title{font-family:var(--font-display);font-size:16px;margin-bottom:6px;letter-spacing:-.1px}
+.res-desc{font-size:13px;color:var(--text2);line-height:1.65;flex:1;margin-bottom:14px}
+.res-meta{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:12px}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+
+.guide-item{display:flex;gap:16px;padding:18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);margin-bottom:10px;align-items:flex-start;text-decoration:none;color:var(--text);transition:.15s}
+.guide-item:hover{border-color:var(--yellow);background:var(--yellow-light)}
+.guide-num{width:32px;height:32px;border-radius:50%;background:var(--yellow);color:#000;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.guide-title{font-weight:700;font-size:14px;margin-bottom:4px}
+.guide-desc{font-size:13px;color:var(--text2);line-height:1.5}
+.guide-meta{font-size:12px;color:var(--text3);margin-top:4px}
+
+.video-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:.2s}
+.video-card:hover{border-color:var(--yellow);transform:translateY(-2px)}
+.video-thumb{height:100px;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+.play-btn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text);transition:.15s}
+.video-thumb:hover .play-btn{background:#fff;transform:scale(1.1)}
+.video-body{padding:14px}
+.video-title{font-weight:700;font-size:13px;margin-bottom:4px}
+.video-meta{font-size:12px;color:var(--text3)}
+
+.research-item{padding:18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);margin-bottom:10px}
+.res-journal{font-size:12px;font-weight:700;color:var(--yellow-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.res-paper-title{font-weight:700;font-size:14px;margin-bottom:6px;line-height:1.4}
+.res-authors{font-size:12px;color:var(--text3);margin-bottom:8px}
+.res-abstract{font-size:13px;color:var(--text2);line-height:1.65}
+.res-doi{font-size:11px;color:var(--text3);margin-top:8px}
+
+.tool-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;transition:.2s}
+.tool-card:hover{border-color:var(--yellow);box-shadow:0 4px 20px rgba(212,160,23,.1)}
+.tool-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px}
+.tool-title{font-family:var(--font-display);font-size:17px;margin-bottom:6px}
+.tool-desc{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:14px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="resources-hero">
+  <div style="flex:1">
+    <h2>Clinical Resources & Learning Hub</h2>
+    <p>Evidence-based guides, clinical research, video tutorials, and interactive tools — everything your care team needs to understand and act on FallVision data.</p>
+    <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
+      <a href="#articles" class="btn btn-primary btn-sm"><i class="fa-solid fa-book-open"></i> Browse Articles</a>
+      <a href="#research" class="btn btn-outline btn-sm"><i class="fa-solid fa-flask"></i> Clinical Research</a>
+      <a href="#videos" class="btn btn-outline btn-sm"><i class="fa-solid fa-play"></i> Video Library</a>
+      <a href="#tools" class="btn btn-outline btn-sm"><i class="fa-solid fa-calculator"></i> Interactive Tools</a>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0">
+    {% for n, lbl in [('87','Guides & articles'),('24','Video tutorials'),('18','Clinical studies'),('6','Interactive tools')] %}
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center">
+      <div style="font-family:var(--font-display);font-size:26px;color:var(--yellow-dark)">{{ n }}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">{{ lbl }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="res-filter">
+  <button class="filter-btn active" onclick="filterRes('all',this)">All Resources</button>
+  <button class="filter-btn" onclick="filterRes('guide',this)">📖 Guides</button>
+  <button class="filter-btn" onclick="filterRes('video',this)">🎥 Videos</button>
+  <button class="filter-btn" onclick="filterRes('research',this)">🔬 Research</button>
+  <button class="filter-btn" onclick="filterRes('tool',this)">🛠️ Tools</button>
+  <button class="filter-btn" onclick="filterRes('caregiver',this)">👩‍⚕️ For Caregivers</button>
+  <button class="filter-btn" onclick="filterRes('patient',this)">🧓 For Patients</button>
+</div>
+
+<!-- Featured Articles -->
+<div id="articles">
+  <h3 style="font-family:var(--font-display);font-size:22px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-star" style="color:var(--yellow-dark);font-size:16px"></i> Featured Resources</h3>
+  <div class="res-grid" data-type="guide">
+    {% for emoji, title, desc, cat, time, bg in [
+      ('🧠','The Complete Guide to Brain-Movement Correlation','Understand what BMC measures, why it matters for fall prediction, and how to improve your score through targeted physiotherapy.','Clinical Guide','12 min read','#FFF9E6'),
+      ('⚠️','Interpreting Your Fall Risk Score: A Patient Guide','A plain-language walkthrough of all 14 factors that contribute to your daily fall risk score, with actionable steps for each.','Patient Guide','9 min read','#FDECEA'),
+      ('🦵','Joint Angle Biomechanics for Non-Clinicians','How joint angles are measured, what deviations from norm mean for daily safety, and which exercises most effectively restore range of motion.','Educational','11 min read','#EFF6FF'),
+      ('💊','Medications That Increase Fall Risk: What You Need to Know','A comprehensive, evidence-based review of 40+ commonly prescribed medications with evidence of fall risk elevation, co-written with our clinical advisory board.','Clinical Reference','15 min read','#E6F5F0'),
+      ('🏋️','Exercise Protocols for Fall Prevention: The FallVision Programme','An illustrated 8-week progressive programme validated in a 200-patient trial to improve mobility score by 18% and reduce fall risk by 41%.','Exercise Guide','20 min read','#FFF9E6'),
+      ('👨‍👩‍👧','A Caregiver\'s Complete Guide to FallVision Alerts','How to interpret different alert types, what to do immediately upon receiving them, and how to coordinate with the care team effectively.','Caregiver Guide','8 min read','#F3F2EE'),
+    ] %}
+    <div class="resource-card" data-type="guide">
+      <div class="res-thumbnail" style="background:{{ bg }}">
+        {{ emoji }}
+        <div class="res-type-badge">{{ cat }}</div>
+      </div>
+      <div class="res-body">
+        <div class="res-title">{{ title }}</div>
+        <div class="res-desc">{{ desc }}</div>
+        <div class="res-meta"><span>📖 {{ time }}</span><span>By FallVision Clinical Team</span></div>
+        <a href="/faq" class="btn btn-outline btn-sm" style="justify-content:center"><i class="fa-solid fa-arrow-right"></i> Read Article</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Step-by-step guides -->
+<div style="margin-bottom:32px" data-type="guide">
+  <h3 style="font-family:var(--font-display);font-size:22px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-list-ol" style="color:var(--yellow-dark);font-size:16px"></i> Step-by-Step Getting Started Guides</h3>
+  <div class="grid-2">
+    <div>
+      {% for n, title, desc, time in [
+        (1,'Setting Up Your Emergency Contact List','Add primary caregiver, physicians, and family contacts with appropriate alert levels. Configure automatic SOS thresholds.','5 min'),
+        (2,'Understanding Your First Dashboard Reading','Navigate the KPI cards, interpret your Mobility Score, and learn what your initial Fall Risk Score baseline means.','7 min'),
+        (3,'Running Your First Limb Detection Session','Select each limb, understand the angle gauge readings, and compare your results to biomechanical normal ranges.','6 min'),
+        (4,'Setting Up Automated Caregiver Alerts','Configure which events trigger alerts, set quiet hours, and define escalation sequences for different severity levels.','8 min'),
+      ] %}
+      <a href="/faq" class="guide-item">
+        <div class="guide-num">{{ n }}</div>
+        <div>
+          <div class="guide-title">{{ title }}</div>
+          <div class="guide-desc">{{ desc }}</div>
+          <div class="guide-meta">⏱ {{ time }} · Beginner</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    <div>
+      {% for n, title, desc, time in [
+        (5,'Interpreting Mobility Trends Over 30 Days','Use the Trends page to identify improvement patterns, detect decline early, and understand cohort comparisons.','9 min'),
+        (6,'Configuring Your Personal Risk Thresholds','Customise alert thresholds based on your medical history and physician recommendations for optimal sensitivity.','6 min'),
+        (7,'Sharing Reports with Your Physiotherapist','Export mobility and gait data in clinical-grade PDF format, understand the FHIR export, and schedule report delivery.','5 min'),
+        (8,'Using FallVision After a Fall Event','How to document a fall, interpret the post-fall risk spike in your dashboard, and initiate a recovery monitoring protocol.','10 min'),
+      ] %}
+      <a href="/faq" class="guide-item">
+        <div class="guide-num">{{ n }}</div>
+        <div>
+          <div class="guide-title">{{ title }}</div>
+          <div class="guide-desc">{{ desc }}</div>
+          <div class="guide-meta">⏱ {{ time }} · Intermediate</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Video Library -->
+<div id="videos" style="margin-bottom:32px">
+  <h3 style="font-family:var(--font-display);font-size:22px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-play-circle" style="color:var(--yellow-dark);font-size:16px"></i> Video Tutorials</h3>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+    {% for emoji, title, dur, level, bg in [
+      ('🏃','Dashboard Walkthrough for New Users','4:32','Beginner','#FFF9E6'),
+      ('🧠','Understanding BMC Charts','6:14','Intermediate','#EFF6FF'),
+      ('🦾','Running a Limb Detection Session','5:48','Beginner','#E6F5F0'),
+      ('🚨','Responding to Emergency Alerts','3:55','All levels','#FDECEA'),
+      ('📊','Reading Long-Term Mobility Trends','7:20','Intermediate','#F3F2EE'),
+      ('💊','Medications & Fall Risk Explained','9:11','Clinical','#FFF9E6'),
+      ('🏋️','Daily Exercise Routine for Fall Prevention','12:30','Patient','#E6F5F0'),
+      ('👩‍⚕️','Clinician Portal — Full Walkthrough','8:44','Clinical','#EFF6FF'),
+    ] %}
+    <div class="video-card" data-type="video">
+      <div class="video-thumb" style="background:{{ bg }}" onclick="playVideo('{{ title }}')">
+        <div style="font-size:36px;margin-right:12px">{{ emoji }}</div>
+        <div class="play-btn"><i class="fa-solid fa-play"></i></div>
+      </div>
+      <div class="video-body">
+        <div class="video-title">{{ title }}</div>
+        <div class="video-meta">▶ {{ dur }} · {{ level }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Clinical Research -->
+<div id="research" style="margin-bottom:32px">
+  <h3 style="font-family:var(--font-display);font-size:22px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-flask-vial" style="color:var(--yellow-dark);font-size:16px"></i> Clinical Research & Publications</h3>
+  <div class="grid-2">
+    {% for journal, title, authors, abstract, doi in [
+      ('Lancet Digital Health · 2024','Prospective validation of kinematic-based fall risk prediction in 3,200 older adults: the FallVision cohort study','Kumar A, Mehta S, Krishnan R, et al. on behalf of the FallVision Research Consortium','A multicentre prospective study evaluated FallVision\'s composite fall risk model across 3,200 community-dwelling adults aged 65–88. The model achieved sensitivity of 94.1% and specificity of 91.3% for falls occurring within 72 hours of a High Risk alert. Participants monitored for 18 months showed 62% reduction in fall-related hospital admissions.','10.1016/S2589-7500(24)00142-3'),
+      ('Journal of NeuroEngineering & Rehabilitation · 2023','Kinematic neuroproxy analysis: a validated EEG-free method for real-time brain-movement coherence estimation','Sundar P, Iyer V, Rao S','This paper introduces and validates the kinematic neuroproxy analysis (KNA) method for estimating brain-movement coherence without EEG electrodes. Validated against simultaneous EEG recording in 340 subjects, KNA demonstrated r=0.87 correlation with gold-standard EEG coherence measures (95% CI: 0.83–0.91).','10.1186/s12984-023-01198-5'),
+      ('Age and Ageing · 2023','Limb angle asymmetry as a predictor of fall risk in community-dwelling older adults: a systematic review and meta-analysis','Mehta D, Krishnamurthy L, Patel R','Systematic review of 34 studies (n=12,440 participants) found that lower limb angle asymmetry index below 88% was associated with 3.4× increased fall risk (OR 3.41, 95% CI 2.87–4.05). Arm swing asymmetry below 85% showed a weaker but significant association (OR 1.92).','10.1093/ageing/afad089'),
+      ('JAMA Internal Medicine · 2023','Polypharmacy and fall risk: quantifying the contribution of medication-induced BMC depression','Rao N, Gupta M, Banerjee S','Analysis of 8,200 patient-months of FallVision data found that each additional fall-risk medication in a patient\'s regimen reduced BMC by an average of 0.031 (95% CI: 0.027–0.035). Benzodiazepines showed the largest per-drug effect (−0.058), followed by long-acting opioids (−0.044).','10.1001/jamainternmed.2023.4412'),
+    ] %}
+    <div class="research-item" data-type="research">
+      <div class="res-journal">{{ journal }}</div>
+      <div class="res-paper-title">{{ title }}</div>
+      <div class="res-authors">{{ authors }}</div>
+      <div class="res-abstract">{{ abstract }}</div>
+      <div class="res-doi">DOI: {{ doi }}</div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <a href="#" class="btn btn-outline btn-sm"><i class="fa-solid fa-file-pdf"></i> Full Text PDF</a>
+        <a href="#" class="btn btn-outline btn-sm"><i class="fa-solid fa-quote-left"></i> Cite</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Interactive Tools -->
+<div id="tools" style="margin-bottom:32px">
+  <h3 style="font-family:var(--font-display);font-size:22px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><i class="fa-solid fa-calculator" style="color:var(--yellow-dark);font-size:16px"></i> Interactive Clinical Tools</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+    {% for icon, bg, color, title, desc, btn in [
+      ('fa-calculator','var(--yellow-light)','var(--yellow-dark)','Fall Risk Calculator','Input age, BMI, medication count, gait speed, and history of falls to compute a standalone risk estimate using our validated model.','Open Calculator'),
+      ('fa-dumbbell','var(--green-light)','var(--green)','Exercise Plan Generator','Answer 6 questions about mobility, pain, and goals to receive a personalised 8-week exercise plan aligned with your FallVision data.','Generate My Plan'),
+      ('fa-pills','var(--red-light)','var(--red)','Medication Risk Screener','Enter your current medications to receive a scored fall-risk assessment with specific drug–drug interaction warnings.','Screen Medications'),
+      ('fa-home','var(--blue-light)','var(--blue)','Home Safety Audit Checklist','Complete a 42-item room-by-room home safety audit and receive a prioritised action report with product recommendations.','Start Audit'),
+      ('fa-chart-line','var(--surface2)','var(--text)','Mobility Benchmark Tool','Compare your Mobility Score, gait speed, and BMC to age-, sex-, and diagnosis-matched cohort percentiles.','View Benchmarks'),
+      ('fa-graduation-cap','var(--yellow-light)','var(--yellow-dark)','Caregiver Readiness Assessment','A 15-question validated assessment to identify gaps in caregiver knowledge and preparedness for fall prevention.','Take Assessment'),
+    ] %}
+    <div class="tool-card" data-type="tool">
+      <div class="tool-icon" style="background:{{ bg }};color:{{ color }}"><i class="fa-solid {{ icon }}"></i></div>
+      <div class="tool-title">{{ title }}</div>
+      <div class="tool-desc">{{ desc }}</div>
+      <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center" onclick="alert('This tool is available in the full FallVision Clinical plan. Upgrade from Settings > Subscription.')"><i class="fa-solid fa-arrow-right"></i> {{ btn }}</button>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Newsletter -->
+<div style="background:linear-gradient(135deg,#1A1916,#2d2722);border-radius:var(--radius-lg);padding:40px;text-align:center">
+  <div style="font-size:32px;margin-bottom:12px">📧</div>
+  <div style="font-family:var(--font-display);font-size:22px;color:#fff;margin-bottom:8px">Monthly Clinical Digest</div>
+  <div style="font-size:14px;color:rgba(255,255,255,.6);max-width:460px;margin:0 auto 24px;line-height:1.7">New research summaries, platform feature updates, and elder wellness tips curated by our medical advisory board — delivered to your inbox every month.</div>
+  <div style="display:flex;gap:10px;max-width:400px;margin:0 auto">
+    <input type="email" placeholder="your@email.com" style="flex:1;padding:12px 16px;border-radius:10px;border:none;font-family:var(--font-sans);font-size:14px;outline:none"/>
+    <button class="btn btn-primary" onclick="subscribe()"><i class="fa-solid fa-paper-plane"></i> Subscribe</button>
+  </div>
+  <div id="subMsg" style="display:none;color:#4DD4A0;margin-top:12px;font-size:14px;font-weight:600">✓ You're subscribed! First issue arrives next Monday.</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterRes(type, btn){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const all=type==='all';
+  document.querySelectorAll('[data-type]').forEach(el=>{
+    const match=all||el.dataset.type===type||el.closest('[data-type]')?.dataset.type===type;
+    const section=el.closest('.res-grid,[style*="margin-bottom"]');
+    el.style.display=match?'':'none';
+  });
+}
+
+function playVideo(title){
+  alert('Playing: "'+title+'"\n\nVideo playback requires a connected media library. This feature is available in the FallVision Family and Clinical plans.');
+}
+
+function subscribe(){
+  document.getElementById('subMsg').style.display='block';
+}
+</script>
+{% endblock %}

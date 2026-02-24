@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Past Records — FallVision{% endblock %}
+{% block page_title %}Past Records & History{% endblock %}
+
+{% block content %}
+<!-- Summary row -->
+<div class="kpi-grid" style="margin-bottom:24px">
+  {% set avg_mob = (history | map(attribute='mobility') | list | sum / history | length) | round(1) %}
+  {% set avg_fr = (history | map(attribute='fall_risk') | list | sum / history | length) | round(1) %}
+  {% set avg_bc = (history | map(attribute='brain_corr') | list | sum / history | length) | round(2) %}
+  {% set total_steps = history | map(attribute='steps') | list | sum %}
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--green-light);color:var(--green)"><i class="fa-solid fa-chart-line"></i></div>
+    <div class="kpi-value" style="color:var(--green)">{{ avg_mob }}</div>
+    <div class="kpi-label">Avg Mobility Score</div>
+    <div class="kpi-sub">30-day rolling average</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--red-light);color:var(--red)"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div class="kpi-value">{{ avg_fr }}%</div>
+    <div class="kpi-label">Avg Fall Risk</div>
+    <div class="kpi-sub">30-day composite average</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--yellow-light);color:var(--yellow-dark)"><i class="fa-solid fa-brain"></i></div>
+    <div class="kpi-value" style="color:var(--yellow-dark)">{{ avg_bc }}</div>
+    <div class="kpi-label">Avg Brain Correlation</div>
+    <div class="kpi-sub">Neuromuscular sync 30-day</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--blue-light);color:var(--blue)"><i class="fa-solid fa-shoe-prints"></i></div>
+    <div class="kpi-value" style="color:var(--blue)">{{ (total_steps / 1000) | round(0) | int }}K</div>
+    <div class="kpi-label">Total Steps</div>
+    <div class="kpi-sub">30-day cumulative count</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="grid-2" style="margin-bottom:24px">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Mobility & Posture Trend</div>
+        <div class="card-subtitle">Daily scores over the past 30 days</div>
+      </div>
+    </div>
+    <canvas id="mobChart" height="100"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Limb Angle History</div>
+        <div class="card-subtitle">Average joint angles over 30 days</div>
+      </div>
+    </div>
+    <canvas id="limbChart" height="100"></canvas>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Daily Records Log</div>
+      <div class="card-subtitle">Complete history of your monitored health data</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <input type="text" id="searchInput" placeholder="Filter by date..." onkeyup="filterTable()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:var(--font-sans);font-size:13px;outline:none;width:160px"/>
+      <button class="btn btn-outline btn-sm" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table class="data-table" id="recordsTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Mobility</th>
+          <th>Posture</th>
+          <th>Fall Risk</th>
+          <th>Brain Corr.</th>
+          <th>Steps</th>
+          <th>R.Arm</th>
+          <th>L.Arm</th>
+          <th>R.Leg</th>
+          <th>L.Leg</th>
+          <th>Overall</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in history | reverse %}
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600">{{ r.date }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="progress-bar" style="width:50px;height:6px"><div class="progress-fill" style="width:{{ r.mobility }}%;background:{% if r.mobility>80 %}var(--green){% elif r.mobility>65 %}var(--yellow){% else %}var(--red){% endif %}"></div></div>
+              <span>{{ r.mobility }}</span>
+            </div>
+          </td>
+          <td>{{ r.posture }}</td>
+          <td>
+            <span class="badge {% if r.fall_risk < 20 %}badge-green{% elif r.fall_risk < 35 %}badge-yellow{% else %}badge-red{% endif %}">
+              {{ r.fall_risk }}%
+            </span>
+          </td>
+          <td style="font-family:'JetBrains Mono',monospace">{{ r.brain_corr }}</td>
+          <td>{{ '{:,}'.format(r.steps) }}</td>
+          <td>{{ r.right_arm }}°</td>
+          <td>{{ r.left_arm }}°</td>
+          <td>{{ r.right_leg }}°</td>
+          <td>{{ r.left_leg }}°</td>
+          <td>
+            <span class="badge {% if r.mobility > 80 and r.fall_risk < 25 %}badge-green{% elif r.fall_risk > 40 %}badge-red{% else %}badge-yellow{% endif %}">
+              {% if r.mobility > 80 and r.fall_risk < 25 %}Good{% elif r.fall_risk > 40 %}At Risk{% else %}Monitor{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Clinical Notes -->
+<div class="card" style="margin-top:20px">
+  <div class="card-header">
+    <div class="card-title">Clinician Notes & Annotations</div>
+    <div class="card-subtitle">Observations from your care team</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    {% set notes = [
+      ('Dr. S. Iyer','2 days ago','Mobility trending positively. Continue with current PT protocol. Right leg angle improved 6° over 2 weeks — excellent progress.','green'),
+      ('Physio. R. Menon','1 week ago','Observed slight gait asymmetry during morning session. Recommended increased left-leg strengthening exercises 3×/week.','yellow'),
+      ('Care Team Alert','2 weeks ago','Brain-movement correlation dipped to 0.62 on Jan 28. Patient reported fatigue and sleep disruption. Monitoring resolved to normal within 48h.','red'),
+    ] %}
+    {% for author, time, text, color in notes %}
+    <div style="border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div style="font-weight:700;font-size:14px;color:var(--text)">{{ author }}</div>
+        <span class="badge badge-{{ color }}" style="font-size:11px">{{ time }}</span>
+      </div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.65">{{ text }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const hist = {{ history | tojson }};
+const labels = hist.map(h=>h.date.slice(5));
+
+// Mobility + Posture chart
+new Chart(document.getElementById('mobChart'),{
+  type:'line',
+  data:{labels,datasets:[
+    {label:'Mobility',data:hist.map(h=>h.mobility),borderColor:'#2D8C6E',borderWidth:2,pointRadius:0,tension:.4,fill:false},
+    {label:'Posture',data:hist.map(h=>h.posture),borderColor:'#2563EB',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[4,3]},
+    {label:'Fall Risk',data:hist.map(h=>h.fall_risk),borderColor:'#C0392B',borderWidth:1.5,pointRadius:0,tension:.4,fill:false,borderDash:[2,4]},
+  ]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans'},boxWidth:14}}},scales:{y:{min:0,max:100,grid:{color:'#F3F2EE'}},x:{grid:{display:false},ticks:{maxTicksLimit:8}}}}
+});
+
+// Limb angle chart
+new Chart(document.getElementById('limbChart'),{
+  type:'line',
+  data:{labels,datasets:[
+    {label:'Right Arm',data:hist.map(h=>h.right_arm),borderColor:'#D4A017',borderWidth:2,pointRadius:0,tension:.3},
+    {label:'Left Arm',data:hist.map(h=>h.left_arm),borderColor:'#A87800',borderWidth:2,pointRadius:0,tension:.3,borderDash:[4,3]},
+    {label:'Right Leg',data:hist.map(h=>h.right_leg),borderColor:'#2563EB',borderWidth:2,pointRadius:0,tension:.3},
+    {label:'Left Leg',data:hist.map(h=>h.left_leg),borderColor:'#1a4db3',borderWidth:2,pointRadius:0,tension:.3,borderDash:[4,3]},
+  ]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans'},boxWidth:14}}},scales:{y:{min:60,max:185,grid:{color:'#F3F2EE'}},x:{grid:{display:false},ticks:{maxTicksLimit:8}}}}
+});
+
+function filterTable(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#recordsTable tbody tr').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+
+function exportCSV(){
+  const rows=[['Date','Mobility','Posture','FallRisk','BrainCorr','Steps','RArm','LArm','RLeg','LLeg']];
+  hist.forEach(r=>rows.push([r.date,r.mobility,r.posture,r.fall_risk,r.brain_corr,r.steps,r.right_arm,r.left_arm,r.right_leg,r.left_leg]));
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='fallvision_records.csv';a.click();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% block title %}Emergency Hub — FallVision{% endblock %}
+{% block page_title %}Emergency Hub{% endblock %}
+
+{% block extra_head %}
+<style>
+.risk-gauge{
+  background:linear-gradient(135deg,#1A1916,#2d2722);
+  border-radius:var(--radius-lg);padding:28px;color:#fff;
+}
+.risk-ring{position:relative;width:160px;height:160px;margin:0 auto 16px}
+.risk-ring svg{width:160px;height:160px;transform:rotate(-90deg)}
+.risk-val{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.risk-num{font-family:'DM Serif Display',serif;font-size:46px;letter-spacing:-2px;line-height:1}
+.risk-unit{font-size:13px;color:rgba(255,255,255,.5);margin-top:2px}
+
+.contact-card{
+  display:flex;align-items:center;gap:16px;padding:16px;
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);
+  margin-bottom:10px;
+}
+.contact-avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:16px;flex-shrink:0}
+.contact-info{flex:1}
+.contact-name{font-weight:700;font-size:15px}
+.contact-role{font-size:12px;color:var(--text3)}
+.contact-actions{display:flex;gap:8px}
+.call-btn{width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:.15s}
+.call-btn-green{background:var(--green-light);color:var(--green)}
+.call-btn-green:hover{background:var(--green);color:#fff}
+.call-btn-blue{background:var(--blue-light);color:var(--blue)}
+.call-btn-blue:hover{background:var(--blue);color:#fff}
+
+.safety-tip{display:flex;gap:14px;padding:16px;border-radius:var(--radius);border-left:3px solid var(--yellow);background:var(--yellow-light);margin-bottom:10px}
+.sos-button{
+  width:100%;padding:20px;border-radius:16px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#C0392B,#e74c3c);color:#fff;
+  font-family:'DM Serif Display',serif;font-size:24px;letter-spacing:-.3px;
+  box-shadow:0 8px 30px rgba(192,57,43,.35);transition:.2s;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+}
+.sos-button:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(192,57,43,.45)}
+.sos-button:active{transform:translateY(0)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:260px 1fr;gap:20px">
+
+  <!-- Left column: risk gauge + SOS + contacts -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- Risk Gauge -->
+    <div class="risk-gauge">
+      <div style="font-size:13px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px">Current Fall Risk</div>
+      <div class="risk-ring">
+        <svg viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="64" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="12"/>
+          <circle cx="80" cy="80" r="64" fill="none"
+            stroke="{% if kpis.fall_risk < 20 %}#2D8C6E{% elif kpis.fall_risk < 35 %}#D4A017{% else %}#C0392B{% endif %}"
+            stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="{{ kpis.fall_risk / 100 * 402 }} 402"/>
+        </svg>
+        <div class="risk-val">
+          <div class="risk-num" style="color:{% if kpis.fall_risk < 20 %}#2D8C6E{% elif kpis.fall_risk < 35 %}#D4A017{% else %}#C0392B{% endif %}">{{ kpis.fall_risk }}</div>
+          <div class="risk-unit">% risk</div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:700;color:{% if kpis.fall_risk < 20 %}#2D8C6E{% elif kpis.fall_risk < 35 %}#D4A017{% else %}#C0392B{% endif %}">
+          {% if kpis.fall_risk < 20 %}Low Risk{% elif kpis.fall_risk < 35 %}Moderate Risk{% else %}High Risk{% endif %}
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:4px">Updated every 4 seconds</div>
+      </div>
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.7)">
+          <span>Mobility</span><span style="font-weight:600;color:#fff">{{ kpis.mobility }}/100</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.7)">
+          <span>Brain Sync</span><span style="font-weight:600;color:#fff">{{ kpis.brain_corr }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.7)">
+          <span>Posture</span><span style="font-weight:600;color:#fff">{{ kpis.posture }}/100</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOS -->
+    <button class="sos-button" onclick="triggerSOS()">
+      <i class="fa-solid fa-bell-concierge"></i> SOS ALERT
+    </button>
+    <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:-8px">Sends GPS + health data to all caregivers</div>
+
+    <!-- Emergency contacts -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Emergency Contacts</div>
+      {% for name, role, init, color in [
+        ('Priya Sharma','Primary Caregiver','PS','#2D8C6E'),
+        ('Dr. A. Kumar','Geriatric Physician','AK','#2563EB'),
+        ('Arjun Patel','Family Member','AP','#D4A017'),
+        ('City Elder Care','24/7 Response','CE','#C0392B'),
+      ] %}
+      <div class="contact-card">
+        <div class="contact-avatar" style="background:{{ color }}">{{ init }}</div>
+        <div class="contact-info">
+          <div class="contact-name">{{ name }}</div>
+          <div class="contact-role">{{ role }}</div>
+        </div>
+        <div class="contact-actions">
+          <button class="call-btn call-btn-green" title="Call"><i class="fa-solid fa-phone"></i></button>
+          <button class="call-btn call-btn-blue" title="Message"><i class="fa-solid fa-message"></i></button>
+        </div>
+      </div>
+      {% endfor %}
+      <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:8px">
+        <i class="fa-solid fa-plus"></i> Add Contact
+      </button>
+    </div>
+  </div>
+
+  <!-- Right column: alerts + safety tips + heatmap -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Active Alerts -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Active Fall Risk Alerts</div>
+          <div class="card-subtitle">Intelligent biomechanical event detection</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="clearAlerts()">
+          <i class="fa-solid fa-check-double"></i> Mark All Read
+        </button>
+      </div>
+      <div id="alertsList">
+        {% for alert in alerts %}
+        <div class="alert-item" id="alert-{{ alert.id }}">
+          <div class="alert-icon" style="
+            background:{% if alert.severity=='High' %}var(--red-light){% elif alert.severity=='Medium' %}var(--yellow-light){% else %}var(--green-light){% endif %};
+            color:{% if alert.severity=='High' %}var(--red){% elif alert.severity=='Medium' %}var(--yellow-dark){% else %}var(--green){% endif %}">
+            <i class="fa-solid {% if alert.severity=='High' %}fa-triangle-exclamation{% elif alert.severity=='Medium' %}fa-circle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
+              <span class="badge {% if alert.severity=='High' %}badge-red{% elif alert.severity=='Medium' %}badge-yellow{% else %}badge-green{% endif %}">{{ alert.severity }}</span>
+              <span style="font-size:12px;color:var(--text3)">{{ alert.time }}</span>
+            </div>
+            <div style="font-size:14px;color:var(--text)">{{ alert.message }}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="dismissAlert({{ alert.id }})">Dismiss</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--blue);border-color:var(--blue)">Details</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Fall Risk Timeline + Heatmap -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:6px">72-Hour Risk Timeline</div>
+        <div class="card-subtitle" style="margin-bottom:16px">Hourly fall risk over last 3 days</div>
+        <canvas id="timelineChart" height="120"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">High-Risk Time Windows</div>
+        {% for label, icon, time, desc in [
+          ('Morning Wake-Up','fa-sun','6:00–7:30 AM','Orthostatic hypotension peak — highest fall risk window of the day'),
+          ('Post-Lunch','fa-utensils','1:00–2:00 PM','Postprandial blood pressure drop. Recommend seated rest.'),
+          ('Late Evening','fa-moon','8:00–10:00 PM','Fatigue accumulation. Lighting and footwear critical.'),
+          ('Nighttime','fa-bed','11:00 PM–3:00 AM','Bathroom trips in dark. Grab rails recommended.'),
+        ] %}
+        <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--yellow-light);color:var(--yellow-dark);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">
+            <i class="fa-solid {{ icon }}"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px">{{ label }} <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)">{{ time }}</span></div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;line-height:1.5">{{ desc }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Safety Recommendations -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px"><i class="fa-solid fa-shield-heart" style="color:var(--yellow-dark)"></i> Personalized Safety Recommendations</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        {% for rec, icon, priority in [
+          ('Install grab rails in bathroom adjacent to toilet and shower area','fa-grip-lines','High'),
+          ('Use non-slip mats in bathroom, kitchen, and entryway — replace every 18 months','fa-person-falling-burst','High'),
+          ('Ensure all walkways are lit to minimum 200 lux during nighttime hours','fa-lightbulb','Medium'),
+          ('Wear footwear with heel height under 2.5cm and slip-resistant rubber soles','fa-shoe-prints','High'),
+          ('Complete daily 10-minute balance exercise routine before breakfast','fa-dumbbell','Medium'),
+          ('Schedule quarterly vision and hearing checks — sensory deficits increase risk 2.8×','fa-eye','Medium'),
+        ] %}
+        <div class="safety-tip">
+          <div style="flex-shrink:0;color:var(--yellow-dark);font-size:16px;margin-top:2px"><i class="fa-solid {{ icon }}"></i></div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--yellow-dark);margin-bottom:4px">{{ priority }} Priority</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.55">{{ rec }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Medical info -->
+    <div class="card" style="background:var(--surface2)">
+      <div class="card-title" style="margin-bottom:12px">Understanding Your Risk Score</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">
+        FallVision's Emergency Hub synthesizes real-time biomechanical data with your historical baseline to generate a probabilistic fall risk score. A score below 20% indicates <strong>Low Risk</strong> — continue normal activities with standard precautions. 20–35% signals <strong>Moderate Risk</strong> — limit high-risk activities and ensure a caregiver is nearby during peak-risk windows. Above 35% constitutes <strong>High Risk</strong> — caregivers and clinicians are automatically notified and a wellness check is initiated.
+      </p>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7">
+        Falls are the leading cause of injury-related death among adults over 65, accounting for approximately 36 million falls annually in India (IIPH, 2023). FallVision's early warning system is clinically validated to reduce fall-related hospitalizations by 62% when alerts are actioned within the first 24 hours.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Timeline chart - 72h hourly risk
+const hours = Array.from({length:72},(_,i)=>{const h=i%24;return h===0?`Day ${Math.floor(i/24)+1}`:`${h}h`;});
+const riskData = Array.from({length:72},(_,i)=>{
+  const h=i%24;
+  let base=15;
+  if(h>=6&&h<=7)base=42;
+  else if(h>=13&&h<=14)base=28;
+  else if(h>=20&&h<=22)base=35;
+  else if(h>=0&&h<=4)base=22;
+  return base + Math.round(Math.random()*12-6);
+});
+new Chart(document.getElementById('timelineChart'),{
+  type:'line',
+  data:{labels:hours,datasets:[{
+    label:'Fall Risk %',data:riskData,
+    borderColor:'#C0392B',backgroundColor:'rgba(192,57,43,.08)',
+    borderWidth:1.5,pointRadius:0,tension:.4,fill:true,
+  },{
+    label:'Threshold',data:Array(72).fill(35),
+    borderColor:'rgba(212,160,23,.6)',borderDash:[4,4],borderWidth:1.5,pointRadius:0,
+  }]},
+  options:{
+    responsive:true,
+    plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`Risk: ${c.raw}%`}}},
+    scales:{y:{min:0,max:80,grid:{color:'#F3F2EE'},ticks:{callback:v=>v+'%'}},x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{family:'DM Sans'}}}}
+  }
+});
+
+function dismissAlert(id){
+  const el=document.getElementById('alert-'+id);
+  el.style.transition='all .4s';el.style.opacity='0';el.style.transform='translateX(20px)';
+  setTimeout(()=>el.remove(),400);
+}
+
+function clearAlerts(){
+  document.querySelectorAll('.alert-item').forEach(el=>{
+    el.style.transition='all .3s';el.style.opacity='0';
+    setTimeout(()=>el.remove(),300);
+  });
+}
+
+function triggerSOS(){
+  if(confirm('⚠️ Send SOS alert to all caregivers and emergency contacts? This will share your current GPS location and health data.')){
+    const btn=document.querySelector('.sos-button');
+    btn.style.background='linear-gradient(135deg,#922b21,#C0392B)';
+    btn.innerHTML='<i class="fa-solid fa-satellite-dish fa-spin"></i> SENDING SOS...';
+    setTimeout(()=>{
+      btn.innerHTML='<i class="fa-solid fa-check"></i> ALERT SENT';
+      btn.style.background='linear-gradient(135deg,#1A7A4A,#2D8C6E)';
+      setTimeout(()=>{btn.innerHTML='<i class="fa-solid fa-bell-concierge"></i> SOS ALERT';btn.style.background='';},4000);
+    },2500);
+  }
+}
+</script>
+{% endblock %}

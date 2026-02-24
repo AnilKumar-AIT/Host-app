@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% block title %}Brain Heatmap — FallVision{% endblock %}
+{% block page_title %}24-Hour Brain Activity Heatmap 🧠{% endblock %}
+
+{% block extra_head %}
+<style>
+.heatmap-grid{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:8px;
+  margin:24px 0;
+}
+.heatmap-cell{
+  aspect-ratio:1;
+  border-radius:8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:600;
+  transition:all .2s;
+  cursor:pointer;
+  border:2px solid transparent;
+}
+.heatmap-cell:hover{
+  transform:scale(1.1);
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+  z-index:10;
+  border-color:var(--yellow-dark);
+}
+.heatmap-cell.high{background:#2D8C6E;color:#fff}
+.heatmap-cell.medium{background:#D4A017;color:#fff}
+.heatmap-cell.low{background:#C0392B;color:#fff}
+.heatmap-time{font-size:10px;opacity:.8;margin-top:2px}
+.heatmap-value{font-size:14px;font-weight:700}
+
+.legend{
+  display:flex;
+  gap:20px;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:var(--surface2);
+  border-radius:10px;
+  margin:20px 0;
+}
+.legend-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+}
+.legend-color{
+  width:24px;
+  height:24px;
+  border-radius:6px;
+}
+
+.stat-cards{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+  margin:24px 0;
+}
+.stat-card{
+  background:var(--surface);
+  border-radius:12px;
+  padding:20px;
+  border:1px solid var(--border);
+  text-align:center;
+}
+.stat-value{
+  font-family:var(--font-display);
+  font-size:36px;
+  letter-spacing:-1px;
+  font-weight:700;
+  color:var(--text);
+}
+.stat-label{
+  font-size:13px;
+  color:var(--text2);
+  margin-top:6px;
+}
+
+.risk-windows{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:16px;
+}
+.risk-window{
+  padding:14px;
+  border-radius:10px;
+  border-left:3px solid;
+  background:var(--surface2);
+}
+.risk-window.high{border-left-color:var(--red)}
+.risk-window.medium{border-left-color:#D4A017}
+.risk-window-time{
+  font-family:var(--font-mono);
+  font-size:14px;
+  font-weight:700;
+  margin-bottom:4px;
+}
+.risk-window-activity{
+  font-size:13px;
+  color:var(--text2);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats Overview -->
+<div class="stat-cards">
+  <div class="stat-card" style="border-top:3px solid var(--green)">
+    <div class="stat-value" style="color:var(--green)">{{ stats.average }}</div>
+    <div class="stat-label">Average Activity</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid var(--blue)">
+    <div class="stat-value">{{ "%02d"|format(stats.peak_hour) }}:00</div>
+    <div class="stat-label">Peak Hour ({{ stats.peak_value }})</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid var(--red)">
+    <div class="stat-value">{{ "%02d"|format(stats.lowest_hour) }}:00</div>
+    <div class="stat-label">Lowest Hour ({{ stats.lowest_value }})</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid var(--yellow)">
+    <div class="stat-value">{{ stats.high_risk_windows|length }}</div>
+    <div class="stat-label">High-Risk Windows</div>
+  </div>
+</div>
+
+<!-- Heatmap -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">24-Hour Brain Activity Pattern</div>
+      <div class="card-subtitle">Click on any hour for detailed analysis</div>
+    </div>
+  </div>
+  
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-color" style="background:#2D8C6E"></div>
+      <span>High Activity (≥ 0.80)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background:#D4A017"></div>
+      <span>Medium Activity (0.70-0.79)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background:#C0392B"></div>
+      <span>Low Activity (&lt; 0.70)</span>
+    </div>
+  </div>
+  
+  <div class="heatmap-grid">
+    {% for hour_data in heatmap_data %}
+    <div class="heatmap-cell {{ hour_data.status }}" onclick="showHourDetails({{ hour_data.hour }}, {{ hour_data.activity }}, '{{ hour_data.status }}')">
+      <div class="heatmap-value">{{ (hour_data.activity * 100)|int }}</div>
+      <div class="heatmap-time">{{ hour_data.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <div class="insight-box">
+    <div class="insight-head"><i class="fa-solid fa-info-circle"></i> Understanding the Heatmap</div>
+    <p>
+      This heatmap shows your brain-limb coordination strength throughout the day. 
+      <strong>Green hours</strong> indicate optimal brain-movement synchronization - ideal for physical activities and exercises. 
+      <strong>Yellow hours</strong> suggest moderate coordination - take extra caution during movement. 
+      <strong>Red hours</strong> indicate high risk periods - avoid strenuous activities and ensure caregiver support is available.
+    </p>
+  </div>
+</div>
+
+<!-- High-Risk Windows Analysis -->
+<div class="card" style="margin-top:24px">
+  <div class="card-title" style="margin-bottom:16px">
+    <i class="fa-solid fa-clock-rotate-left"></i> High-Risk Time Windows
+  </div>
+  
+  {% if stats.high_risk_windows|length > 0 %}
+  <div class="risk-windows">
+    {% for window in stats.high_risk_windows[:6] %}
+    <div class="risk-window high">
+      <div class="risk-window-time">{{ window.label }}</div>
+      <div class="risk-window-activity">Activity: {{ (window.activity * 100)|int }}%</div>
+      <div style="font-size:12px;color:var(--red);font-weight:600;margin-top:6px">
+        ⚠️ High fall risk - Extra supervision needed
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--text2)">
+    <i class="fa-solid fa-check-circle" style="font-size:48px;color:var(--green);margin-bottom:12px;display:block"></i>
+    <div style="font-size:16px;font-weight:600">No high-risk windows detected today!</div>
+    <div style="font-size:14px;margin-top:6px">Your brain activity levels are healthy throughout the day.</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Pattern Analysis -->
+<div class="grid-2" style="margin-top:24px">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Morning Pattern (6 AM - 12 PM)</div>
+    <canvas id="morningChart" height="150"></canvas>
+    <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;font-size:13px">
+      Morning hours typically show lower brain activity due to sleep inertia. 
+      Take extra care during 6-8 AM when coordination is at its lowest.
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">Evening Pattern (6 PM - 12 AM)</div>
+    <canvas id="eveningChart" height="150"></canvas>
+    <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:8px;font-size:13px">
+      Evening hours show declining activity due to accumulated fatigue. 
+      Ensure adequate lighting and avoid rushing during late evening hours.
+    </div>
+  </div>
+</div>
+
+<!-- Recommendations -->
+<div class="card" style="margin-top:24px;background:linear-gradient(135deg,var(--green-light),#e6f7f0)">
+  <div class="card-title" style="margin-bottom:16px">
+    <i class="fa-solid fa-clipboard-check"></i> Personalized Recommendations
+  </div>
+  
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:10px;color:var(--green)">
+        ✓ Best Times for Activities
+      </div>
+      <ul style="list-style:none;font-size:14px;line-height:2;color:var(--text)">
+        <li>🏃 <strong>9-11 AM:</strong> Exercise & Physical Therapy</li>
+        <li>🚶 <strong>3-5 PM:</strong> Walking & Light Activities</li>
+        <li>🧘 <strong>7-8 PM:</strong> Gentle Stretching</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:10px;color:var(--red)">
+        ⚠️ Times to Exercise Caution
+      </div>
+      <ul style="list-style:none;font-size:14px;line-height:2;color:var(--text)">
+        <li>🛑 <strong>6-8 AM:</strong> Slow movements, sit for dressing</li>
+        <li>⚡ <strong>1-3 PM:</strong> Post-lunch dip - rest recommended</li>
+        <li>🌙 <strong>10 PM-3 AM:</strong> Bathroom trips - use night lights</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="hourModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center" onclick="closeModal()">
+  <div class="card" style="max-width:500px;margin:20px" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" id="modalTitle">Hour Details</div>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text2)">&times;</button>
+    </div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const heatmapData = {{ heatmap_data | tojson }};
+
+// Morning chart
+const morningData = heatmapData.filter(h => h.hour >= 6 && h.hour < 12);
+new Chart(document.getElementById('morningChart'), {
+  type: 'line',
+  data: {
+    labels: morningData.map(h => h.label),
+    datasets: [{
+      label: 'Brain Activity',
+      data: morningData.map(h => h.activity * 100),
+      borderColor: '#2D8C6E',
+      backgroundColor: 'rgba(45,140,110,.1)',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointBackgroundColor: '#2D8C6E',
+      tension: 0.4,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: 50, max: 100, ticks: { callback: v => v + '%' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Evening chart
+const eveningData = heatmapData.filter(h => h.hour >= 18);
+new Chart(document.getElementById('eveningChart'), {
+  type: 'line',
+  data: {
+    labels: eveningData.map(h => h.label),
+    datasets: [{
+      label: 'Brain Activity',
+      data: eveningData.map(h => h.activity * 100),
+      borderColor: '#D4A017',
+      backgroundColor: 'rgba(212,160,23,.1)',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointBackgroundColor: '#D4A017',
+      tension: 0.4,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: 50, max: 100, ticks: { callback: v => v + '%' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+function showHourDetails(hour, activity, status) {
+  const modal = document.getElementById('hourModal');
+  const title = document.getElementById('modalTitle');
+  const content = document.getElementById('modalContent');
+  
+  const activityPct = Math.round(activity * 100);
+  const statusText = status === 'high' ? 'High' : status === 'medium' ? 'Medium' : 'Low';
+  const statusColor = status === 'high' ? 'var(--green)' : status === 'medium' ? '#D4A017' : 'var(--red)';
+  
+  title.textContent = `${hour}:00 - ${hour+1}:00 Analysis`;
+  
+  let recommendations = '';
+  if (status === 'low') {
+    recommendations = `
+      <div style="padding:12px;background:var(--red-light);border-radius:8px;margin-top:12px">
+        <strong style="color:var(--red)">⚠️ High Risk Period</strong>
+        <ul style="margin-top:8px;padding-left:20px;font-size:14px">
+          <li>Avoid strenuous activities</li>
+          <li>Ensure caregiver is nearby</li>
+          <li>Use support equipment (walker, rails)</li>
+          <li>Move slowly and deliberately</li>
+        </ul>
+      </div>`;
+  } else if (status === 'medium') {
+    recommendations = `
+      <div style="padding:12px;background:#FFF3C4;border-radius:8px;margin-top:12px">
+        <strong style="color:#A87800">⚡ Moderate Risk</strong>
+        <ul style="margin-top:8px;padding-left:20px;font-size:14px">
+          <li>Light to moderate activities acceptable</li>
+          <li>Take breaks frequently</li>
+          <li>Stay hydrated</li>
+        </ul>
+      </div>`;
+  } else {
+    recommendations = `
+      <div style="padding:12px;background:var(--green-light);border-radius:8px;margin-top:12px">
+        <strong style="color:var(--green)">✓ Optimal Period</strong>
+        <ul style="margin-top:8px;padding-left:20px;font-size:14px">
+          <li>Ideal for exercise and physical therapy</li>
+          <li>Good time for walking and activities</li>
+          <li>Continue normal routines</li>
+        </ul>
+      </div>`;
+  }
+  
+  content.innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:56px;font-weight:700;color:${statusColor}">${activityPct}%</div>
+      <div style="font-size:18px;font-weight:600;color:${statusColor};margin-top:8px">${statusText} Activity</div>
+    </div>
+    ${recommendations}
+  `;
+  
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('hourModal').style.display = 'none';
+}
+</script>
+{% endblock %}

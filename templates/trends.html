@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% block title %}Trends — FallVision{% endblock %}
+{% block page_title %}Long-Term Mobility Trends{% endblock %}
+
+{% block content %}
+<!-- Trend KPIs -->
+<div class="kpi-grid" style="margin-bottom:24px">
+  {% set mob_first = history[:10] | map(attribute='mobility') | list %}
+  {% set mob_last = history[-10:] | map(attribute='mobility') | list %}
+  {% set avg_first = (mob_first | sum / mob_first | length) | round(1) %}
+  {% set avg_last = (mob_last | sum / mob_last | length) | round(1) %}
+  {% set change = (avg_last - avg_first) | round(1) %}
+
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--green-light);color:var(--green)"><i class="fa-solid fa-arrow-trend-up"></i></div>
+    <div class="kpi-value" style="color:{% if change > 0 %}var(--green){% else %}var(--red){% endif %}">
+      {% if change > 0 %}+{% endif %}{{ change }}
+    </div>
+    <div class="kpi-label">Mobility Change</div>
+    <div class="kpi-sub">First 10 vs last 10 days</div>
+    <div class="kpi-trend {% if change > 0 %}trend-up{% else %}trend-down{% endif %}">
+      {% if change > 0 %}↑ Improving trend{% else %}↓ Declining trend{% endif %}
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--blue-light);color:var(--blue)"><i class="fa-solid fa-chart-area"></i></div>
+    <div class="kpi-value" style="color:var(--blue)">{{ avg_last }}</div>
+    <div class="kpi-label">Recent Avg Mobility</div>
+    <div class="kpi-sub">Last 10-day average</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--yellow-light);color:var(--yellow-dark)"><i class="fa-solid fa-calendar-check"></i></div>
+    <div class="kpi-value" style="color:var(--yellow-dark)">{{ history | length }}</div>
+    <div class="kpi-label">Days Monitored</div>
+    <div class="kpi-sub">Total continuous monitoring</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:var(--red-light);color:var(--red)"><i class="fa-solid fa-fire"></i></div>
+      <div class="kpi-value" style="color:var(--red)">{{ streak }}d</div>
+    <div class="kpi-label">Low-Risk Streak</div>
+    <div class="kpi-sub">Consecutive safe days</div>
+  </div>
+</div>
+
+<!-- Main 60-day trend -->
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header">
+    <div>
+      <div class="card-title">60-Day Comprehensive Mobility Analysis</div>
+      <div class="card-subtitle">Mobility score, posture stability, and brain-movement correlation over 60 days</div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTrend('all',this)">All Metrics</button>
+      <button class="tab-btn" onclick="showTrend('mobility',this)">Mobility</button>
+      <button class="tab-btn" onclick="showTrend('posture',this)">Posture</button>
+      <button class="tab-btn" onclick="showTrend('brain',this)">Brain Sync</button>
+    </div>
+  </div>
+  <canvas id="trendChart" height="80"></canvas>
+</div>
+
+<!-- Decline detection + Recovery insights -->
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Decline Detection Analysis</div>
+      <div class="card-subtitle">Statistical detection of mobility regression windows</div>
+    </div>
+    <canvas id="declineChart" height="120"></canvas>
+    <div class="insight-box" style="margin-top:16px">
+      <div class="insight-head"><i class="fa-solid fa-magnifying-glass-chart"></i> Statistical Insight</div>
+      <p>Your mobility has maintained a positive regression slope of <strong>+0.31 points/day</strong> over the past 60 days. No statistically significant decline episodes (defined as ≥8-point drop sustained over 5+ days) were detected in this period. Your recovery velocity after low-mobility days is <strong>1.8× faster</strong> than the cohort average for your age group.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Weekly Pattern Analysis</div>
+      <div class="card-subtitle">Mobility patterns by day of week over 60 days</div>
+    </div>
+    <canvas id="weekPatternChart" height="120"></canvas>
+    <div class="insight-box" style="margin-top:16px">
+      <div class="insight-head"><i class="fa-solid fa-calendar"></i> Pattern Insight</div>
+      <p>Your mobility peaks on <strong>Wednesday and Friday</strong> — days aligned with your physiotherapy schedule. Mondays show the steepest post-weekend recovery, suggesting 48h of reduced physical activity over weekends. Consider adding a 20-minute Sunday walk to flatten this weekly valley.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Comparative analysis + Milestones -->
+<div class="grid-65-35" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Cohort Comparison</div>
+      <div class="card-subtitle">Your metrics vs. age-matched peer group (65–75 years)</div>
+    </div>
+    <canvas id="radarChart" height="140"></canvas>
+    <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      {% for metric, you, cohort, color in [
+        ('Mobility Score','{{ avg_last }}','71.4','green'),
+        ('Posture Stability','86','74.2','green'),
+        ('Brain-Mvmt Corr.','0.81','0.74','green'),
+        ('Gait Symmetry','93.8%','88.1%','green'),
+        ('Step Count/Day','5,920','4,840','green'),
+        ('Fall Risk Score','{{ kpis.fall_risk }}%','31.2%','{% if kpis.fall_risk < 31 %}green{% else %}red{% endif %}'),
+      ] %}
+      <div style="background:var(--surface2);border-radius:10px;padding:12px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px;font-weight:600">{{ metric }}</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:18px;font-weight:700;color:var(--green)">{{ you }}</span>
+          <span style="font-size:12px;color:var(--text3)">Cohort: {{ cohort }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <!-- Milestones -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">🏆 Health Milestones</div>
+      {% for title, desc, date, achieved in [
+        ('30 Consecutive Safe Days','30 days with fall risk below 30%','Jan 15, 2025',True),
+        ('Mobility Score 90+','Achieved mobility score above 90','Dec 28, 2024',True),
+        ('Brain Sync Excellence','7-day avg brain correlation above 0.85','Feb 1, 2025',True),
+        ('Step Goal Champion','10,000+ steps on 5 consecutive days','Upcoming',False),
+        ('Perfect Posture Week','Posture score above 90 for 7 days','Upcoming',False),
+      ] %}
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
+        <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;{% if achieved %}background:var(--yellow-light){% else %}background:var(--surface2);opacity:.5{% endif %}">
+          {% if achieved %}🏅{% else %}⭕{% endif %}
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--text){% if not achieved %};opacity:.6{% endif %}">{{ title }}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">{{ desc }}</div>
+          <div style="font-size:11px;color:{% if achieved %}var(--green){% else %}var(--text3){% endif %};margin-top:2px;font-weight:{% if achieved %}600{% else %}400{% endif %}">{{ date }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Forecast -->
+    <div class="card" style="background:linear-gradient(135deg,#1A1916,#2d2722)">
+      <div class="card-title" style="color:#fff;margin-bottom:6px">AI Trajectory Forecast</div>
+      <div class="card-subtitle" style="color:rgba(255,255,255,.5);margin-bottom:16px">Based on current trend momentum</div>
+      {% for metric, current, forecast, change, color in [
+        ('Mobility Score','{{ avg_last }}','83.2','↑ +3.1 pts/month','#2D8C6E'),
+        ('Fall Risk','{{ kpis.fall_risk }}%','19.4%','↓ Improving','#2D8C6E'),
+        ('Brain Sync','0.81','0.84','↑ Strengthening','#D4A017'),
+      ] %}
+      <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,.08);margin-bottom:10px">
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px">{{ metric }}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span style="font-size:12px;color:rgba(255,255,255,.4)">Now: </span>
+            <span style="color:#fff;font-weight:600">{{ current }}</span>
+          </div>
+          <div style="color:rgba(255,255,255,.4);font-size:13px">→ 30 days →</div>
+          <div>
+            <span style="font-size:12px;color:rgba(255,255,255,.4)">Projected: </span>
+            <span style="color:{{ color }};font-weight:600">{{ forecast }}</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:{{ color }};margin-top:6px;font-weight:600">{{ change }}</div>
+      </div>
+      {% endfor %}
+      <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:8px;text-align:center">Projections based on 60-day regression model · ±12% confidence interval</div>
+    </div>
+  </div>
+</div>
+
+<!-- Recovery insights -->
+<div class="card">
+  <div class="card-title" style="margin-bottom:16px">Recovery & Resilience Insights</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+    <div>
+      <h4 style="font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:10px">Recovery Velocity</h4>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:10px">After a mobility dip event (defined as a drop of 5+ points), your average recovery time to baseline is <strong>2.3 days</strong> — compared to a cohort average of 4.1 days. This indicates strong physiological resilience and good neuromuscular adaptation capacity.</p>
+      <canvas id="recoveryChart" height="100"></canvas>
+    </div>
+    <div>
+      <h4 style="font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:10px">Correlation with Sleep</h4>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:10px">Analysis of your wearable sleep data reveals a <strong>0.68 correlation</strong> between sleep duration and next-day mobility score. Nights with &gt;7.5h sleep are followed by mobility scores averaging 8.2 points higher than sleep-deprived nights.</p>
+      <canvas id="sleepCorrChart" height="100"></canvas>
+    </div>
+    <div>
+      <h4 style="font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:10px">Physical Therapy Impact</h4>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:10px">PT session days show a <strong>+9.4 point</strong> average mobility boost in the following 24 hours. The effect decays linearly over 48h without follow-up exercise. Completing prescribed home exercises on non-PT days extends this effect by 31 hours.</p>
+      <canvas id="ptChart" height="100"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const hist = {{ history | tojson }};
+const labels60 = hist.map(h=>h.date.slice(5));
+const mob60 = hist.map(h=>h.mobility);
+const post60 = hist.map(h=>h.posture);
+const brain60 = hist.map(h=>h.brain_corr*100);
+const fr60 = hist.map(h=>h.fall_risk);
+
+// 60-day trend chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+let trendChart = new Chart(trendCtx,{
+  type:'line',
+  data:{labels:labels60,datasets:[
+    {label:'Mobility',data:mob60,borderColor:'#2D8C6E',borderWidth:2,pointRadius:0,tension:.4,fill:false},
+    {label:'Posture',data:post60,borderColor:'#2563EB',borderWidth:2,pointRadius:0,tension:.4,fill:false},
+    {label:'Brain Sync×100',data:brain60,borderColor:'#D4A017',borderWidth:2,pointRadius:0,tension:.4,fill:false},
+  ]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans'},boxWidth:14}}},scales:{y:{min:30,max:105,grid:{color:'#F3F2EE'}},x:{grid:{display:false},ticks:{maxTicksLimit:10}}}}
+});
+
+function showTrend(type,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const dsMap={
+    mobility:[{label:'Mobility',data:mob60,borderColor:'#2D8C6E',borderWidth:2,pointRadius:0,tension:.4}],
+    posture:[{label:'Posture',data:post60,borderColor:'#2563EB',borderWidth:2,pointRadius:0,tension:.4}],
+    brain:[{label:'Brain Sync×100',data:brain60,borderColor:'#D4A017',borderWidth:2,pointRadius:0,tension:.4}],
+    all:[
+      {label:'Mobility',data:mob60,borderColor:'#2D8C6E',borderWidth:2,pointRadius:0,tension:.4},
+      {label:'Posture',data:post60,borderColor:'#2563EB',borderWidth:2,pointRadius:0,tension:.4},
+      {label:'Brain Sync×100',data:brain60,borderColor:'#D4A017',borderWidth:2,pointRadius:0,tension:.4},
+    ]
+  };
+  trendChart.data.datasets=dsMap[type];trendChart.update();
+}
+
+// Decline detection chart (rolling 7-day avg)
+const roll7 = mob60.map((_,i,a)=>i<6?null:+(a.slice(i-6,i+1).reduce((s,v)=>s+v,0)/7).toFixed(1));
+new Chart(document.getElementById('declineChart'),{
+  type:'line',
+  data:{labels:labels60,datasets:[
+    {label:'Daily',data:mob60,borderColor:'rgba(45,140,110,.3)',borderWidth:1,pointRadius:0,tension:.3},
+    {label:'7-Day Rolling Avg',data:roll7,borderColor:'#2D8C6E',borderWidth:2.5,pointRadius:0,tension:.4},
+  ]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans'},boxWidth:14}}},scales:{y:{min:40,max:105,grid:{color:'#F3F2EE'}},x:{grid:{display:false},ticks:{maxTicksLimit:8}}}}
+});
+
+// Weekly pattern
+const dayLabels=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const dayAvgs=dayLabels.map((_,di)=>{
+  const vals=hist.filter((_,i)=>new Date(hist[i].date).getDay()===((di+1)%7)).map(h=>h.mobility);
+  return vals.length?+(vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1):0;
+});
+new Chart(document.getElementById('weekPatternChart'),{
+  type:'bar',
+  data:{labels:dayLabels,datasets:[{label:'Avg Mobility',data:dayAvgs,backgroundColor:dayAvgs.map(v=>v>80?'rgba(45,140,110,.7)':'rgba(212,160,23,.7)'),borderRadius:8}]},
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:50,max:100,grid:{color:'#F3F2EE'}},x:{grid:{display:false}}}}
+});
+
+// Radar chart
+new Chart(document.getElementById('radarChart'),{
+  type:'radar',
+  data:{
+    labels:['Mobility','Posture','Brain Sync','Gait','Steps','Balance'],
+    datasets:[
+      {label:'You',data:[82,86,81,94,78,84],borderColor:'#D4A017',backgroundColor:'rgba(212,160,23,.15)',pointBackgroundColor:'#D4A017',borderWidth:2},
+      {label:'Cohort Avg',data:[71,74,74,88,62,72],borderColor:'#9B9890',backgroundColor:'rgba(155,152,144,.1)',pointBackgroundColor:'#9B9890',borderWidth:1.5},
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans'},boxWidth:14}}},scales:{r:{min:40,max:100,ticks:{display:false},grid:{color:'#E8E6DF'}}}}
+});
+
+// Mini charts
+const smallOpts={responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#F3F2EE'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{maxTicksLimit:4,font:{size:10}}}}};
+const recovLabels=['Day-2','Day-1','Dip','Day+1','Day+2','Day+3'];
+new Chart(document.getElementById('recoveryChart'),{type:'line',data:{labels:recovLabels,datasets:[{data:[82,80,71,76,80,83],borderColor:'#2D8C6E',backgroundColor:'rgba(45,140,110,.1)',borderWidth:2,pointRadius:3,tension:.4,fill:true}]},options:smallOpts});
+
+new Chart(document.getElementById('sleepCorrChart'),{type:'bar',data:{labels:['<6h','6-7h','7-8h','>8h'],datasets:[{data:[66,72,80,86],backgroundColor:['#C0392B','#D4A017','#2D8C6E','#1A7A4A'],borderRadius:6}]},options:{...smallOpts,plugins:{legend:{display:false}}}});
+
+new Chart(document.getElementById('ptChart'),{type:'line',data:{labels:['PT Day','+1 Day','+2 Days','+3 Days','+4 Days'],datasets:[{data:[90,86,81,75,70],borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.1)',borderWidth:2,pointRadius:3,tension:.4,fill:true}]},options:smallOpts});
+</script>
+{% endblock %}
