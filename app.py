@@ -3,10 +3,15 @@ import json, os, hashlib, secrets
 from datetime import datetime, timedelta
 import random, math
 import logging
+from dotenv import load_dotenv
 
 # Import our professional utilities
 from utils.threshold_checker import ThresholdChecker
 from utils.notification_service import NotificationService
+from utils.dynamodb_storage import DynamoDBStorage
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -16,11 +21,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(32)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
 
 # Initialize professional services
 threshold_checker = ThresholdChecker()
 notification_service = NotificationService()
+
+# Initialize DynamoDB (use DynamoDB if AWS credentials exist, else use local JSON)
+USE_DYNAMODB = os.getenv('AWS_ACCESS_KEY_ID') is not None
+if USE_DYNAMODB:
+    try:
+        db_storage = DynamoDBStorage()
+        logger.info("✅ Using DynamoDB for user storage")
+    except Exception as e:
+        logger.warning(f"DynamoDB init failed, using local storage: {e}")
+        USE_DYNAMODB = False
+else:
+    logger.info("Using local JSON storage")
 
 logger.info("FallVision Application Started")
 
@@ -28,14 +45,44 @@ USERS_FILE = 'users.json'
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 def load_users():
-    if not os.path.exists(USERS_FILE):
-        return {}
-    with open(USERS_FILE) as f:
-        return json.load(f)
+    """Load users from DynamoDB or local JSON"""
+    if USE_DYNAMODB:
+        # Convert DynamoDB list to dict format
+        users_list = db_storage.get_all_users()
+        return {user['email']: user for user in users_list}
+    else:
+        if not os.path.exists(USERS_FILE):
+            return {}
+        with open(USERS_FILE) as f:
+            return json.load(f)
 
 def save_users(users):
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
+    """Save users to DynamoDB or local JSON"""
+    if USE_DYNAMODB:
+        # Users dict not needed for DynamoDB, handled per-user
+        return True
+    else:
+        with open(USERS_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
+        return True
+
+def get_user(email):
+    """Get single user from DynamoDB or local JSON"""
+    if USE_DYNAMODB:
+        return db_storage.get_user(email)
+    else:
+        users = load_users()
+        return users.get(email)
+
+def save_user(user_data):
+    """Save single user to DynamoDB or local JSON"""
+    if USE_DYNAMODB:
+        return db_storage.save_user(user_data)
+    else:
+        users = load_users()
+        users[user_data['email']] = user_data
+        save_users(users)
+        return True
 
 def hash_password(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
@@ -127,9 +174,9 @@ def login():
     if request.method == 'POST':
         email = request.form['email'].strip().lower()
         pw    = request.form['password']
-        users = load_users()
-        if email in users and users[email]['password'] == hash_password(pw):
-            session['user'] = {'email': email, **{k:v for k,v in users[email].items() if k!='password'}}
+        user = get_user(email)
+        if user and user['password'] == hash_password(pw):
+            session['user'] = {'email': email, **{k:v for k,v in user.items() if k!='password'}}
             return redirect(url_for('dashboard'))
         error = 'Invalid email or password.'
     return render_template('login.html', error=error)
@@ -142,14 +189,16 @@ def signup():
         email = request.form['email'].strip().lower()
         pw    = request.form['password']
         role  = request.form.get('role','Patient')
-        users = load_users()
-        if email in users:
+        
+        # Check if user exists
+        existing_user = get_user(email)
+        if existing_user:
             error = 'An account with this email already exists.'
         elif len(pw) < 6:
             error = 'Password must be at least 6 characters.'
         else:
-            users[email] = {'name':name,'email':email,'role':role,'password':hash_password(pw)}
-            save_users(users)
+            user_data = {'name':name,'email':email,'role':role,'password':hash_password(pw)}
+            save_user(user_data)
             session['user'] = {'email':email,'name':name,'role':role}
             return redirect(url_for('dashboard'))
     return render_template('signup.html', error=error)
